@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Investavimo skaičiuoklė</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F6F5; --panel:#FFFFFF; --ink:#13221E; --muted:#5B6964; --line:#D5DDDA; --soft:#E8EEEC;
+  --accent:#1D5A47; --pes:#4F6AA3; --base:#1C7A56; --opt:#B0741A; --contrib:#8A9591; --warn:#9A3B26;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1715; --panel:#16201D; --ink:#E4EBE8; --muted:#9AA8A3; --line:#2A3833; --soft:#1D2925;
+    --accent:#5CC49A; --pes:#8FA5DA; --base:#52C08F; --opt:#E3A94B; --contrib:#7F8C88; --warn:#E28A72;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1715; --panel:#16201D; --ink:#E4EBE8; --muted:#9AA8A3; --line:#2A3833; --soft:#1D2925;
+  --accent:#5CC49A; --pes:#8FA5DA; --base:#52C08F; --opt:#E3A94B; --contrib:#7F8C88; --warn:#E28A72;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Work Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+h1,h2,.fig{font-family:"Spectral",Georgia,"Times New Roman",serif}
+h1{font-size:1.9rem;line-height:1.15;margin:0 0 .35rem;font-weight:600;letter-spacing:-.01em}
+h2{font-size:1.25rem;margin:0 0 .6rem;font-weight:600}
+p{margin:.3rem 0}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 32px}
+header.top{padding:8px 0 18px;max-width:62ch}
+header.top p{color:var(--muted)}
+.layout{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+.results>*,.inputs{min-width:0}
+@media(min-width:980px){.layout{grid-template-columns:320px minmax(0,1fr);align-items:start}.inputs{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.inputs fieldset{border:0;border-top:1px solid var(--line);margin:0;padding:14px 0 6px;min-width:0}
+.row>*,.row3>*{min-width:0}
+.inputs details{min-width:0}
+.settings{display:grid;gap:0 22px}
+@media(min-width:760px){.settings{grid-template-columns:1fr 1fr}}
+.settings fieldset{border:0;margin:0;padding:0 0 4px;min-width:0}
+.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs button{border:0;background:none;color:var(--muted);padding:10px 14px;border-bottom:3px solid transparent;white-space:nowrap;font-weight:500;font-size:.95rem}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabpanel{display:grid;gap:18px;min-width:0}
+.tabpanel[hidden]{display:none}
+.tabpanel>*{min-width:0}
+.lead{margin:0;color:var(--muted)}
+.dsum{display:none}
+@media(max-width:979px){
+  .inputs{padding:0}
+  .inputs details{padding:0 16px}
+  .inputs details[open]{padding-bottom:16px}
+  .dsum{display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer;list-style:none;padding:14px 0;font-weight:600}
+  .dsum::-webkit-details-marker{display:none}
+  .dsum-t{white-space:nowrap}
+  .dsum-t::before{content:"▸ ";color:var(--accent)}
+  details[open]>.dsum .dsum-t::before{content:"▾ "}
+  .dsum-v{font-weight:400;color:var(--muted);font-size:.86rem;text-align:right}
+}
+.fold>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary h2{margin:0}
+.fold>summary::after{content:"▸";color:var(--accent);font-size:1.1rem}
+.fold[open]>summary::after{content:"▾"}
+.fold[open]>summary{margin-bottom:12px}
+#summary{color:var(--ink);font-size:1.02rem}
+.lbl{display:block;font-size:.86rem;color:var(--muted);margin-bottom:4px}
+.seg input.mini{width:64px;padding:4px 8px;font-size:15px;border-radius:999px;text-align:center}
+.seg{align-items:center}
+.inputs fieldset:first-of-type{border-top:0;padding-top:0}
+legend{font-weight:600;padding:0;margin-bottom:8px;font-size:.95rem}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end}
+label.f{display:block;margin-bottom:10px;font-size:.86rem;color:var(--muted)}
+label.f span.t{display:block;margin-bottom:3px}
+input[type=text],input[type=month],select{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-variant-numeric:tabular-nums}
+input[type=text]:disabled{opacity:.5}
+.plans{display:flex;gap:6px;margin-bottom:8px}
+.plans select,.plans input{flex:1;min-width:0}
+.btn.sm{padding:5px 10px;font-size:.82rem}
+.del{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0 4px}
+.del:hover{color:var(--warn)}
+.up{color:var(--base)} .down{color:var(--warn)}
+.head select{width:auto}
+input:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hint{font-size:.78rem;color:var(--muted);margin:-4px 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:-2px 0 10px}
+button{font:inherit;cursor:pointer}
+.chip,.seg button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:4px 11px;font-size:.82rem}
+.chip:hover,.seg button:hover{border-color:var(--accent)}
+.seg{display:flex;gap:6px;margin-bottom:8px}
+.seg button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:.86rem;margin:4px 0 10px}
+.check input{margin-top:3px;accent-color:var(--accent)}
+.radio{display:grid;gap:6px;margin-bottom:10px;font-size:.88rem}
+.radio label{display:flex;gap:8px;align-items:flex-start}
+.radio input{margin-top:4px;accent-color:var(--accent)}
+.sc-pes{--c:var(--pes)} .sc-base{--c:var(--base)} .sc-opt{--c:var(--opt)}
+.r-lbl{display:flex;align-items:center;gap:6px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--c);display:inline-block;flex:none}
+.results{display:grid;gap:18px;min-width:0}
+.cards{display:grid;gap:12px}
+@media(min-width:640px){.cards{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--c);border-radius:10px;padding:14px}
+.card .name{display:flex;justify-content:space-between;font-weight:600}
+.card .name small{color:var(--muted);font-weight:400}
+.fig{font-size:1.9rem;line-height:1.1;font-weight:600;margin:.5rem 0 .1rem;font-variant-numeric:tabular-nums}
+.sub{font-size:.84rem;color:var(--muted)}
+.pair{display:flex;justify-content:space-between;gap:8px;font-size:.88rem;padding:5px 0;border-top:1px dashed var(--line);font-variant-numeric:tabular-nums}
+.pair:first-of-type{margin-top:8px}
+.pair b{font-weight:600}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.88rem}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal;min-width:110px}
+@media(max-width:520px){th,td{padding:6px 5px;font-size:.82rem}}
+thead th{font-weight:600;color:var(--muted);font-size:.8rem}
+tr.total td{font-weight:600}
+.eat{display:grid;gap:14px}
+@media(min-width:640px){.eat{grid-template-columns:auto 1fr;align-items:center}}
+.eat .fig{font-size:2.4rem;color:var(--warn);margin:0}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--soft);margin:6px 0}
+.bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.84rem;margin-bottom:6px}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend .ln{width:18px;height:3px;background:var(--c);display:inline-block}
+.legend .ln.dash{background:repeating-linear-gradient(90deg,var(--c) 0 5px,transparent 5px 8px)}
+#chart{position:relative;width:100%}
+#chart svg{display:block;width:100%;height:auto;touch-action:pan-y}
+#tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 9px;font-size:.8rem;display:none;box-shadow:0 2px 10px rgba(0,0,0,.12);min-width:150px;font-variant-numeric:tabular-nums}
+#tip div{display:flex;justify-content:space-between;gap:10px}
+.head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.head h2{margin:0}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--panel);border-radius:6px;padding:7px 14px;font-size:.88rem}
+.btn.ghost{background:transparent;color:var(--accent)}
+#yearly th:first-child,#yearly td:first-child{min-width:0}
+.tbl-wrap{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.tbl-wrap thead th{position:sticky;top:0;background:var(--panel)}
+textarea{width:100%;min-height:120px;font:12px/1.4 ui-monospace,Consolas,monospace;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px;margin-top:8px}
+.msg{font-size:.84rem;color:var(--muted);margin-top:6px;min-height:1em}
+.verdict{padding:10px 12px;border-radius:8px;background:var(--soft);font-size:.92rem;margin-top:10px}
+.note{font-size:.84rem;color:var(--muted)}
+footer{margin-top:26px;font-size:.74rem;color:var(--muted);max-width:90ch;line-height:1.45}
+.foot-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Investavimo skaičiuoklė</h1>
+    <p>Kiek išaugtų reguliarios įmokos per 20–30 metų. Pradžioje – paprasti skaičiavimai, išsamesni – skirtukuose. Visi duomenys saugomi tik šioje naršyklėje ir niekur nesiunčiami.</p>
+  </header>
+
+  <div class="layout" id="app">
+    <!-- PAGRINDINIAI DUOMENYS (visada matomi) -->
+    <aside class="panel inputs" aria-label="Pagrindiniai duomenys">
+      <details id="dataBox" open>
+      <summary class="dsum"><span class="dsum-t">Keisti duomenis</span><span id="dsumTxt" class="dsum-v"></span></summary>
+      <fieldset>
+        <legend>Pagrindiniai duomenys</legend>
+        <div class="row">
+          <label class="f"><span class="t">Pradinė suma, €</span><input type="text" inputmode="decimal" id="initial"></label>
+          <label class="f"><span class="t">Kas mėnesį, €</span><input type="text" inputmode="decimal" id="monthly"></label>
+        </div>
+        <span class="lbl">Laikotarpis</span>
+        <div class="seg" id="yearSeg">
+          <button type="button" data-y="20">20 m.</button>
+          <button type="button" data-y="25">25 m.</button>
+          <button type="button" data-y="30">30 m.</button>
+          <input type="text" inputmode="numeric" id="years" aria-label="Metai (1–50)" class="mini">
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Metinė grąža prieš fondo išlaidas, %</legend>
+        <div class="row3">
+          <label class="f sc-pes"><span class="t r-lbl"><i class="dot"></i>Pesimist.</span><input type="text" inputmode="decimal" id="rPes"></label>
+          <label class="f sc-base"><span class="t r-lbl"><i class="dot"></i>Bazinis</span><input type="text" inputmode="decimal" id="rBase"></label>
+          <label class="f sc-opt"><span class="t r-lbl"><i class="dot"></i>Optimist.</span><input type="text" inputmode="decimal" id="rOpt"></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Infliacija, %</legend>
+        <input type="text" inputmode="decimal" id="infl" aria-label="Metinė infliacija, %">
+        <div class="chips" style="margin-top:8px">
+          <button type="button" class="chip" data-infl="2,5">2,5 % ilgalaikė</button>
+          <button type="button" class="chip" data-infl="2">2 % ECB tikslas</button>
+          <button type="button" class="chip" data-infl="6,1">6,1 % dabar</button>
+        </div>
+        <p class="hint">Dabartinė infliacija Lietuvoje (2026 m. rugsėjį, išankstinis vertinimas) – 6,1 %. Lietuvos banko prognozė: 5,1 % 2026 m., 3,1 % 2027 m., 2,6 % 2028 m., todėl 20–30 m. vidurkiui realistiškiau 2–3 %. Atnaujinta: 2026-11-10.</p>
+      </fieldset>
+      <p class="hint">Grąža 4 / 6 / 8 % – tos pačios prielaidos kaip paskolos skaičiuoklėje (Vanguard modelis euro investuotojui 4,4–6,4 %, 2026-07; Goldman Sachs ~7 %, 2025-11). Atnaujinta: 2026-11-11.</p>
+      <p class="hint">Išsamesni nustatymai (mokesčiai, krizė, tikslas, paskola) – skirtukuose dešinėje.</p>
+      <p class="hint" id="syncMsg"></p>
+      <fieldset>
+        <legend>Išsaugoti planai</legend>
+        <div class="plans"><select id="planSel" aria-label="Išsaugoti planai"><option value="">— pasirinkite planą —</option></select><button type="button" class="btn ghost sm" id="planDel">Ištrinti</button></div>
+        <div class="plans"><input type="text" id="planName" placeholder="Pvz., 200 × 20" aria-label="Plano pavadinimas"><button type="button" class="btn sm" id="planSave">Išsaugoti</button></div>
+        <p class="hint">Išsaugo visus nustatymus; pasirinkus planą jis įkeliamas.</p>
+      </fieldset>
+      <button type="button" class="btn ghost" id="reset">Atstatyti numatytas reikšmes</button>
+      </details>
+    </aside>
+
+    <main class="results">
+      <nav class="tabs" role="tablist" id="tabs">
+        <button type="button" role="tab" data-tab="main">Pagrindinis</button>
+        <button type="button" role="tab" data-tab="progress">Progresas</button>
+        <button type="button" role="tab" data-tab="plan">Planavimas</button>
+        <button type="button" role="tab" data-tab="tax">Mokesčiai</button>
+        <button type="button" role="tab" data-tab="risk">Rizika</button>
+        <button type="button" role="tab" data-tab="hist">Istorija</button>
+      </nav>
+
+      <!-- 1. PAGRINDINIS -->
+      <div class="tabpanel" data-panel="main">
+        <p class="lead" id="summary"></p>
+        <div class="cards" id="cards"></div>
+        <section class="panel">
+          <div class="head">
+            <h2>Vertė pagal metus</h2>
+            <label class="check" style="margin:0"><input type="checkbox" id="chartReal"> <span>Šiandienos eurais</span></label>
+          </div>
+          <div class="legend" id="legend"></div>
+          <div id="chart"></div>
+        </section>
+        <section class="panel">
+          <h2>Palyginimas: 20, 25 ir 30 metų</h2>
+          <div id="periods"></div>
+        </section>
+        <details class="panel fold">
+          <summary><h2>Metinė lentelė ir CSV</h2></summary>
+          <div class="head">
+            <div class="seg" id="tblSeg" style="margin:0">
+              <button type="button" data-s="pes">Pesimistinis</button>
+              <button type="button" data-s="base">Bazinis</button>
+              <button type="button" data-s="opt">Optimistinis</button>
+            </div>
+            <button type="button" class="btn" id="csvBtn">Atsisiųsti CSV</button>
+          </div>
+          <div class="tbl-wrap" style="margin-top:10px"><table id="yearly"></table></div>
+          <p class="msg" id="csvMsg"></p>
+          <div id="csvFallback"></div>
+        </details>
+      </div>
+
+      <!-- PROGRESAS -->
+      <div class="tabpanel" data-panel="progress" hidden>
+        <p class="lead">Kartą per mėnesį įrašykite faktinę portfelio vertę iš IBKR – matysite, ar esate virš ar po planu.</p>
+        <section class="panel settings">
+          <fieldset>
+            <legend>Plano pradžia</legend>
+            <label class="f"><span class="t">Pirmos įmokos mėnuo</span><input type="month" id="pStart"></label>
+            <p class="hint">Planas skaičiuojamas pagal pagrindinius duomenis kairėje (įmoka, grąžos).</p>
+          </fieldset>
+          <fieldset>
+            <legend>Naujas įrašas</legend>
+            <div class="row">
+              <label class="f"><span class="t">Mėnuo</span><input type="month" id="pMonth"></label>
+              <label class="f"><span class="t">Portfelio vertė, €</span><input type="text" inputmode="decimal" id="pValue"></label>
+            </div>
+            <button type="button" class="btn" id="pAdd">Įrašyti</button>
+            <p class="msg" id="pMsg"></p>
+          </fieldset>
+        </section>
+        <section class="panel">
+          <div class="head">
+            <h2>Faktas ir planas</h2>
+            <button type="button" class="btn ghost sm" id="pCsv">Atsisiųsti CSV</button>
+          </div>
+          <div id="progressOut"></div>
+          <p class="note" id="pStore"></p>
+        </section>
+      </div>
+
+      <!-- 2. MOKESČIAI -->
+      <div class="tabpanel" data-panel="tax" hidden>
+        <p class="lead">Kaip fondo išlaidos ir GPM keičia galutinę sumą ir kaip mokestį teisėtai sumažinti.</p>
+        <section class="panel settings">
+          <fieldset>
+            <legend>Fondo ir platformos išlaidos, %/m.</legend>
+            <div class="row">
+              <label class="f"><span class="t">Fondo TER</span><input type="text" inputmode="decimal" id="ter"></label>
+              <label class="f"><span class="t">Platformos mokestis</span><input type="text" inputmode="decimal" id="platform"></label>
+            </div>
+            <label class="f"><span class="t">Komisinis už vieną pirkimą, €</span><input type="text" inputmode="decimal" id="trade"></label>
+            <p class="hint">IBKR komisinis – 1,25 € už pirkimą (jūsų nurodyta 2026-11-11). Skaičiuojamas vienas pirkimas per mėnesį; jei komisinis pasikeis, įrašykite naują sumą, 0 – be komisinio.</p>
+            <p class="hint">VWCE TER 0,14 % (nuo 2026-07-28; atnaujinta: 2026-11-11). TER ir platformos mokestis – % per metus. IBKR saugojimo mokesčio neima.</p>
+            <label class="f"><span class="t">Pardavimą išskaidyti per metų</span><input type="text" inputmode="numeric" id="sellYears"></label>
+            <p class="hint">1 – viskas parduodama vienais metais.</p>
+          </fieldset>
+          <fieldset>
+            <legend>Gyventojų pajamų mokestis</legend>
+            <div class="radio" role="radiogroup">
+              <label><input type="radio" name="mode" value="regular"> <span>Įprastas režimas: apmokestinamas pardavimo pelnas, 500 € metinė lengvata</span></label>
+              <label><input type="radio" name="mode" value="is"> <span>Investicinė sąskaita: apmokestinama tik tai, kas išimama virš įmokėtos sumos</span></label>
+            </div>
+            <div class="row">
+              <label class="f"><span class="t">GPM tarifas, %</span><input type="text" inputmode="decimal" id="taxRate"></label>
+              <label class="f"><span class="t">Lengvata, €/m.</span><input type="text" inputmode="decimal" id="exempt"></label>
+            </div>
+            <label class="check"><input type="checkbox" id="progressive"> <span>Pelnui virš 12 VDU (2026 m. – 27 745,80 €) taikyti 20 %</span></label>
+            <p class="hint">Nuo 2026 m. finansinių priemonių pardavimo pelnui iki 12 VDU taikomas 15 %, virš – 20 %, o kai visos metinės pajamos viršija 36 ir 60 VDU – 25 ir 32 % (čia skaičiuojama supaprastintai, 20 %). Investicinėje sąskaitoje – 15 % nepriklausomai nuo sumos. Fiksuotas 15 % už ilgiau nei 5 m. laikymo išimtį, pagal viešus paaiškinimus, taikomas ne biržoje įsigytoms akcijoms, dalims ar pajams, todėl biržoje pirktiems ETF (pvz., VWCE per IBKR) atsargiau šį langelį įjungti. VDU dydis keičiasi kasmet. Galutinai patvirtinkite per Mano VMI.</p>
+            <label class="f"><span class="t">Išsiimama suma pabaigoje, € (tuščia – viskas)</span><input type="text" inputmode="decimal" id="withdraw"></label>
+          </fieldset>
+        </section>
+        <section class="panel">
+          <h2>Įmokos, prieaugis ir mokesčiai</h2>
+          <div class="scroll"><table id="breakdown"></table></div>
+          <p class="note" id="isNote"></p>
+        </section>
+        <section class="panel">
+          <h2>Kiek suvalgo išlaidos ir mokesčiai</h2>
+          <div class="eat" id="eat"></div>
+        </section>
+        <section class="panel">
+          <h2>Išskaidytas pardavimas</h2>
+          <div id="stagger"></div>
+        </section>
+      </div>
+
+      <!-- 3. RIZIKA -->
+      <div class="tabpanel" data-panel="risk" hidden>
+        <p class="lead">Kas nutinka, jei rinka nukrenta arba jei pradedate vėliau.</p>
+        <section class="panel settings">
+          <fieldset>
+            <legend>Krizės scenarijus</legend>
+            <div class="row">
+              <label class="f"><span class="t">Kritimas, %</span><input type="text" inputmode="decimal" id="crashPct"></label>
+              <label class="f"><span class="t">Kuriais metais</span><input type="text" inputmode="numeric" id="crashYear"></label>
+            </div>
+            <label class="check"><input type="checkbox" id="crashChart"> <span>Rodyti krizę pagrindiniame grafike</span></label>
+            <p class="hint">Vienkartinis kritimas metų pabaigoje bazinio scenarijaus portfeliui. 0 % – nerodyti.</p>
+          </fieldset>
+          <fieldset>
+            <legend>Rizikos mažinimas prieš pabaigą</legend>
+            <div class="row3">
+              <label class="f"><span class="t">Paskutinius metų</span><input type="text" inputmode="numeric" id="glideYears"></label>
+              <label class="f"><span class="t">Iki dalies, %</span><input type="text" inputmode="decimal" id="glideShare"></label>
+              <label class="f"><span class="t">Saugi grąža, %</span><input type="text" inputmode="decimal" id="safeRate"></label>
+            </div>
+            <p class="hint">Kasmet vis didesnė dalis perkeliama į saugesnį turtą (pvz., trumpų obligacijų ar pinigų rinkos ETF). 0 metų – nenaudoti. Saugi grąža 2,25 % – kaip Bigbank taupomasis indėlis (patikrinta 2026-11-10).</p>
+          </fieldset>
+        </section>
+        <section class="panel">
+          <h2>Krizės poveikis</h2>
+          <div id="crisis"></div>
+        </section>
+        <section class="panel">
+          <h2>Rizikos mažinimas prieš pabaigą</h2>
+          <div id="glide"></div>
+        </section>
+        <section class="panel">
+          <h2>Pradėjus 5 metais vėliau</h2>
+          <div id="late"></div>
+        </section>
+      </div>
+
+      <!-- ISTORIJA -->
+      <div class="tabpanel" data-panel="hist" hidden>
+        <p class="lead">Kaip jūsų planas būtų pasisekęs su tikromis MSCI ACWI grąžomis eurais (2011–2025), o ne pastoviais procentais.</p>
+        <section class="panel">
+          <h2>Pradėjus skirtingais metais</h2>
+          <div id="histAll"></div>
+        </section>
+        <section class="panel">
+          <div class="head">
+            <h2>Metai po metų</h2>
+            <select id="histStart" aria-label="Pradžios metai"></select>
+          </div>
+          <div id="histOne"></div>
+        </section>
+      </div>
+
+      <!-- 4. PLANAVIMAS -->
+      <div class="tabpanel" data-panel="plan" hidden>
+        <p class="lead">Tikslo suma, įmokų didinimas, esamas portfelis ir palyginimas su paskolos permoka.</p>
+        <section class="panel settings">
+          <fieldset>
+            <legend>Tikslas ir įmokos</legend>
+            <div class="row">
+              <label class="f"><span class="t">Tikslo suma, €</span><input type="text" inputmode="decimal" id="goal"></label>
+              <label class="f"><span class="t">Per metų</span><input type="text" inputmode="numeric" id="goalYears"></label>
+            </div>
+            <label class="check"><input type="checkbox" id="goalReal"> <span>Tikslas šiandienos eurais</span></label>
+            <label class="f"><span class="t">Įmokos didinimas kasmet, %</span><input type="text" inputmode="decimal" id="incr"></label>
+            <p class="hint">0 % – visą laiką ta pati įmoka. Keičia visus skaičiavimus.</p>
+          </fieldset>
+          <fieldset>
+            <legend>Esamas portfelis ir paskola</legend>
+            <label class="check"><input type="checkbox" id="cont"> <span>Tęsti nuo dabartinio portfelio (pakeičia pradinę sumą)</span></label>
+            <div class="row">
+              <label class="f"><span class="t">Dabartinė vertė, €</span><input type="text" inputmode="decimal" id="curValue"></label>
+              <label class="f"><span class="t">Iš jos įmokėta, €</span><input type="text" inputmode="decimal" id="curBasis"></label>
+            </div>
+            <div class="contribs" style="margin-top:12px">
+              <div style="font-weight:600;margin-bottom:4px">Mano įmokos</div>
+              <div id="contribList"></div>
+              <button type="button" id="contribAdd" style="margin-top:6px;padding:6px 12px;border:1px solid currentColor;border-radius:6px;background:none;cursor:pointer;font:inherit">+ Pridėti įmoką</button>
+              <p class="hint" id="contribSum"></p>
+              <p class="hint">Įrašykite kiekvieną realiai investuotą sumą. Kai įmokų yra, skaičiuoklė pati tęsia nuo jų: „Iš jos įmokėta“ = įmokų suma, „Dabartinė vertė“ – jūsų įrašyta portfelio vertė (jei tuščia – laikoma lygi įmokų sumai). Prognozė skaičiuojama nuo šiandien tiek metų į priekį, kiek nurodyta laukelyje „Laikotarpis“.</p>
+            </div>
+            <label class="f"><span class="t">Paskolos palūkanų norma, %/m.</span><input type="text" inputmode="decimal" id="loanRate"></label>
+            <p class="hint">Įrašykite savo paskolos metinę palūkanų normą (banko marža + EURIBOR). Rinkoje 2026-11-09: 2,773 %. Atnaujinta: 2026-11-11.</p>
+          </fieldset>
+        </section>
+        <section class="panel">
+          <h2>Kiek reikia kas mėnesį tikslui pasiekti</h2>
+          <div id="goalOut"></div>
+        </section>
+        <section class="panel">
+          <h2>Investuoti ar permokėti paskolą</h2>
+          <div id="loanOut"></div>
+        </section>
+      </div>
+
+    </main>
+  </div>
+
+  <footer>
+    Tai hipotetinis skaičiavimas, ne investavimo ar mokesčių konsultacija. Grąža negarantuota: vertė gali kristi 30–50 %, o realūs rezultatai skirsis nuo scenarijų. Skaičiuojama supaprastintai: įmokos kas mėnesio pradžioje, išlaidos išskaičiuojamos kas mėnesį, visa suma (arba nurodyta dalis) parduodama vienais metais laikotarpio pabaigoje, įprastame režime daliniam išėmimui naudojama vidutinė, o ne FIFO įsigijimo kaina. GPM tarifus, lengvatas ir investicinės sąskaitos taisykles pasitikrinkite vmi.lt.
+  </footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+const KEY = "investavimo-skaiciuokle-v6";
+const DEF = {initial:"0",monthly:"200",incr:"0",years:"20",rPes:"4",rBase:"6",rOpt:"8",ter:"0,14",platform:"0",trade:"1,25",infl:"2,5",
+  taxRate:"15",exempt:"500",withdraw:"",sellYears:"5",crashPct:"40",crashYear:"18",glideYears:"5",glideShare:"50",safeRate:"2,25",histStart:"2011",curValue:"",curBasis:"",goal:"100000",goalYears:"20",loanRate:"4",
+  progressive:false,cont:false,goalReal:false,chartReal:false,crashChart:false,mode:"regular",tableScen:"base",tab:"main",av:1,contribs:[]};
+/* Bendros prielaidos (2026-11-11), tos pačios kaip paskolos skaičiuoklėje: grąža 4/6/8 %, VWCE TER 0,14 %, infliacija 2,5 %, saugi grąža 2,25 %, paskolos norma 4,19 %. */
+function applyAssumptions(st){ st.rPes="4"; st.rBase="6"; st.rOpt="8"; st.ter="0,14"; st.infl="2,5"; st.safeRate="2,25"; st.loanRate="4"; st.av=1; return st; }
+const TEXT = ["initial","monthly","incr","years","rPes","rBase","rOpt","ter","platform","trade","infl","taxRate","exempt","withdraw","sellYears","crashPct","crashYear","glideYears","glideShare","safeRate","histStart","curValue","curBasis","goal","goalYears","loanRate"];
+const CHECK = ["progressive","cont","goalReal","chartReal","crashChart"];
+const SCEN = [{k:"pes",name:"Pesimistinis",short:"Pesim.",id:"rPes",c:"var(--pes)"},{k:"base",name:"Bazinis",short:"Bazinis",id:"rBase",c:"var(--base)"},{k:"opt",name:"Optimistinis",short:"Optim.",id:"rOpt",c:"var(--opt)"}];
+const TH = 27745.80;
+/* Komisinis už vieną mėnesio pirkimą, € (nustatomas params()); įmoka skaičiuojama visa, investuojama įmoka minus komisinis. */
+let TRADE = 0;
+const buy = m => m > 0 ? Math.max(0, m - TRADE) : 0;
+const tfee = m => m > 0 ? Math.min(m, TRADE) : 0;
+const $ = id => document.getElementById(id);
+const eur = new Intl.NumberFormat("lt-LT",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+const pct = new Intl.NumberFormat("lt-LT",{maximumFractionDigits:2});
+const E = v => eur.format(Math.round(v||0));
+let state = Object.assign({}, DEF);
+
+let hadLocal = false;
+function load(){
+  try{ const s = localStorage.getItem(KEY); if(s){ const raw = JSON.parse(s); hadLocal = true; Object.assign(state, raw); if(!("av" in raw)){ try{ localStorage.setItem(KEY+"-kopija-iki-2026-11-11", s); }catch(e){} applyAssumptions(state); } } }catch(e){}
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+/* Tikras pakeitimas (ne skirtuko perjungimas): pažymimas laikas ir sinchronizuojama su paskyra. */
+function touch(){ state.savedAt = Date.now(); save(); queueCloud(); }
+
+/* ---------- Paskyra (db): nustatymai ir išsaugoti planai ---------- */
+let sRef = null, sTimer = null, sBusy = false, sAgain = false;
+function syncMsg(t){ const el = $('syncMsg'); if(el) el.textContent = t; }
+function plainState(st){ const o = Object.assign({}, st); delete o.tab; delete o.tableScen; delete o.savedAt; delete o.synced; return o; }
+function sameState(a,b){ const x = plainState(Object.assign({}, DEF, a)), y = plainState(Object.assign({}, DEF, b)); return Object.keys(x).every(k => String(x[k]) === String(y[k])); }
+async function pushCloud(){
+  if(!sRef) return; if(sBusy){ sAgain = true; return; } sBusy = true;
+  try{
+    const st = Object.assign({}, state); delete st.tab; delete st.tableScen;
+    await sRef.set(JSON.parse(JSON.stringify({v:1, savedAt: state.savedAt||0, state: st, plans: loadPlans()})));
+    syncMsg("Nustatymai ir planai išsaugoti jūsų paskyroje – matysite ir kitame įrenginyje.");
+  }catch(e){ syncMsg("Nepavyko išsaugoti paskyroje – duomenys išsaugoti šioje naršyklėje."); }
+  sBusy = false; if(sAgain){ sAgain = false; queueCloud(); }
+}
+function queueCloud(){ if(!sRef) return; clearTimeout(sTimer); sTimer = setTimeout(pushCloud, 900); }
+async function initCloud(){
+  try{
+    if(!(window.claude && typeof window.claude.use === "function")){ syncMsg("Duomenys saugomi šioje naršyklėje."); return; }
+    const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    const id = user ? await user.id() : null;
+    if(!db || !id){ syncMsg("Duomenys saugomi šioje naršyklėje."); return; }
+    const ref = db.doc(`data/users/${id}/settings`);
+    const snap = await ref.get();
+    let push = false;
+    if(snap.exists){
+      const d = JSON.parse(JSON.stringify(snap.data())) || {};
+      const lp = loadPlans(), plans = Object.assign({}, d.plans || {});
+      /* Planai sujungiami: nieko netrinama; jei tuo pačiu vardu skiriasi – paliekami abu. */
+      Object.keys(lp).forEach(n => {
+        if(!(n in plans)){ plans[n] = lp[n]; push = true; }
+        else if(!sameState(plans[n], lp[n])){ const n2 = (n+" (šis įrenginys)").slice(0,60); if(!(n2 in plans)){ plans[n2] = lp[n]; push = true; } }
+      });
+      if(d.state && (d.savedAt||0) > (state.savedAt||0)){
+        const cs = Object.assign({}, d.state); if(!("av" in cs)) applyAssumptions(cs);
+        /* Šios naršyklės duomenys, dar nesinchronizuoti ir kitokie nei paskyroje, išsaugomi kaip planas. */
+        if(hadLocal && !state.synced && !sameState(state, cs)){ plans["Šios naršyklės duomenys iki perkėlimo"] = plainState(state); push = true; }
+        state = Object.assign({}, DEF, cs, {tab: state.tab, tableScen: state.tableScen, savedAt: d.savedAt||0});
+      } else if(!d.state || (state.savedAt||0) > (d.savedAt||0)) push = true;
+      savePlans(plans);
+    } else { if(!state.savedAt) state.savedAt = Date.now(); push = true; }
+    state.synced = true; save();
+    sRef = ref;
+    fillPlans(""); fill(); render();
+    if(push) await pushCloud(); else syncMsg("Nustatymai ir planai saugomi jūsų paskyroje – matysite ir kitame įrenginyje.");
+  }catch(e){ sRef = null; syncMsg("Duomenys saugomi šioje naršyklėje."); }
+}
+
+function fill(){
+  TEXT.forEach(id => $(id).value = state[id] ?? "");
+  CHECK.forEach(id => $(id).checked = !!state[id]);
+  document.querySelectorAll('input[name=mode]').forEach(r => r.checked = (r.value === state.mode));
+  renderContribs();
+}
+function todayIso(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function renderContribs(){
+  const el=$('contribList'); if(!el) return;
+  const cs=Array.isArray(state.contribs)?state.contribs:[];
+  el.innerHTML = cs.length ? cs.map((c,i)=>`<div style="display:flex;gap:6px;align-items:center;margin:4px 0"><input type="date" data-ci="${i}" data-cf="d" value="${String(c.d||'').replace(/[^0-9-]/g,'')}" aria-label="Įmokos data"><input type="text" inputmode="decimal" data-ci="${i}" data-cf="a" value="${String(c.a||'').replace(/[^0-9.,\s]/g,'')}" aria-label="Įmokos suma, €" style="width:110px"> €<button type="button" data-cdel="${i}" aria-label="Ištrinti įmoką" style="border:0;background:none;cursor:pointer;font:inherit">✕</button></div>`).join('') : '<p class="hint">Įmokų dar neįrašyta.</p>';
+}
+function numOld(v, d){ if(v===undefined||v===null) return d; const s=String(v).trim().replace(/\s/g,"").replace(",","."); if(s==="") return d; const n=parseFloat(s); return isFinite(n)?n:d; }
+function num(v, d){ if(v===undefined||v===null) return d; let s=String(v).trim().replace(/[\s  €%]/g,""); if(s==="") return d; if(/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s=s.replace(/\./g,""); else if(/^-?\d{1,3}(,\d{3})+\.\d+$/.test(s)) s=s.replace(/,/g,""); s=s.replace(",","."); const n=parseFloat(s); return isFinite(n)?n:d; }
+function clamp(v,a,b){ return Math.min(b,Math.max(a,v)); }
+
+function params(){
+  const p = {
+    initial: Math.max(0,num(state.initial,0)), monthly: Math.max(0,num(state.monthly,0)), incr: clamp(num(state.incr,0),-20,50)/100,
+    years: Math.round(clamp(num(state.years,20),1,50)),
+    ter: Math.max(0,num(state.ter,0)), platform: Math.max(0,num(state.platform,0)), infl: clamp(num(state.infl,0),-10,50)/100,
+    taxRate: clamp(num(state.taxRate,15),0,100)/100, exempt: Math.max(0,num(state.exempt,0)), progressive: !!state.progressive,
+    mode: state.mode==="is"?"is":"regular", withdraw: num(state.withdraw,null),
+    cont: !!state.cont, curValue: Math.max(0,num(state.curValue,0)), curBasis: num(state.curBasis,null),
+    goal: Math.max(0,num(state.goal,0)), goalYears: Math.round(clamp(num(state.goalYears,20),1,50)), goalReal: !!state.goalReal,
+    loanRate: clamp(num(state.loanRate,0),0,50)/100, chartReal: !!state.chartReal,
+    sellYears: Math.round(clamp(num(state.sellYears,1),1,20)),
+    crashPct: clamp(num(state.crashPct,0),0,95)/100,
+    glideYears: Math.round(clamp(num(state.glideYears,0),0,20)),
+    glideShare: clamp(num(state.glideShare,0),0,100)/100,
+    safeRate: clamp(num(state.safeRate,0),-5,15)/100
+  };
+  p.fee = (p.ter + p.platform)/100;
+  p.trade = Math.max(0,num(state.trade,0)); TRADE = p.trade;
+  p.crashYear = Math.round(clamp(num(state.crashYear,1),1,p.years));
+  SCEN.forEach(s => p[s.k] = clamp(num(state[s.id],0),-50,50)/100);
+  { const cs=(Array.isArray(state.contribs)?state.contribs:[]).filter(c=>c&&num(c.a,0)>0); p.contribN=cs.length; p.contribSum=cs.reduce((s,c)=>s+num(c.a,0),0); if(p.contribSum>0){ p.cont=true; p.curBasis=p.contribSum; if(!(p.curValue>0)) p.curValue=p.contribSum; } }
+  if(p.cont && p.curValue>0){ p.start = p.curValue; p.basis = (p.curBasis===null? p.curValue : Math.max(0,p.curBasis)); }
+  else { p.start = p.initial; p.basis = p.initial; }
+  return p;
+}
+
+/* Mėnesinė simuliacija: įmoka mėnesio pradžioje, grąža, tada išlaidos (TER + platforma). */
+function sim(start, basis, monthly, incr, years, r, fee, crash){
+  const g = Math.pow(1+r,1/12)-1, fm = fee/12;
+  let v = start, c = basis, fees = 0;
+  const rows = [{y:0,c:c,v:v,fees:0}];
+  for(let y=1;y<=years;y++){
+    const m = monthly*Math.pow(1+incr,y-1);
+    for(let k=0;k<12;k++){ v += buy(m); c += m; fees += tfee(m); v *= (1+g); const f = v*fm; v -= f; fees += f; }
+    let pre = null;
+    if(crash && crash.y===y && crash.pct>0){ pre = v; v *= (1-crash.pct); }
+    rows.push({y:y,c:c,v:v,fees:fees,pre:pre});
+  }
+  return rows;
+}
+function taxCalc(value, basis, W, p){
+  const w = (W===null || W<=0) ? value : Math.min(W, value);
+  let taxable;
+  if(p.mode==="is"){ taxable = Math.max(0, w - basis); }
+  else { const gain = Math.max(0, value-basis); const part = value>0 ? w*gain/value : 0; taxable = Math.max(0, part - p.exempt); }
+  const tax = (p.progressive && p.mode!=="is") ? Math.min(taxable,TH)*p.taxRate + Math.max(0,taxable-TH)*0.20 : taxable*p.taxRate;
+  return {w:w, taxable:taxable, tax:tax, net:w-tax, remain:value-w};
+}
+function taxOn(taxable, p){
+  return (p.progressive && p.mode!=="is") ? Math.min(taxable,TH)*p.taxRate + Math.max(0,taxable-TH)*0.20 : taxable*p.taxRate;
+}
+/* Išskaidytas pardavimas: kasmet parduodama likutis/(N-k); tarp pardavimų likutis auga. */
+function staggered(value, basis, r, p){
+  const N = p.sellYears, g = Math.pow(1+r,1/12)-1, fm = p.fee/12;
+  let v = value, b = basis, rows = [], gainsTotal = 0, taxTotal = 0, wTotal = 0;
+  for(let k=0;k<N;k++){
+    if(k>0){ for(let m=0;m<12;m++){ v *= (1+g); v -= v*fm; } }
+    const w = v/(N-k);
+    let taxable, gainPart;
+    if(p.mode==="is"){ gainPart = Math.max(0, w-b); taxable = gainPart; b = Math.max(0, b-w); }
+    else { const gain = Math.max(0, v-b); gainPart = v>0 ? w*gain/v : 0; const costPart = w-gainPart; b = Math.max(0, b-costPart); taxable = Math.max(0, gainPart - p.exempt); }
+    const tax = taxOn(taxable, p);
+    v -= w; gainsTotal += gainPart; taxTotal += tax; wTotal += w;
+    rows.push({k, w, tax, net:w-tax, left:v});
+  }
+  const lumpTaxable = p.mode==="is" ? gainsTotal : Math.max(0, gainsTotal - p.exempt);
+  return {rows, taxTotal, wTotal, netTotal: wTotal-taxTotal, lumpTax: taxOn(lumpTaxable,p)};
+}
+/* Rizikos mažinimas: paskutinius G metų akcijų dalis tolygiai mažinama iki (1 - share). */
+function simGlide(p, r, crash, useGlide){
+  const years = p.years, G = useGlide ? Math.min(p.glideYears, years) : 0;
+  const ge = Math.pow(1+r,1/12)-1, gs = Math.pow(1+p.safeRate,1/12)-1, fm = p.fee/12;
+  let eq = p.start, sf = 0, c = p.basis;
+  for(let y=1;y<=years;y++){
+    const m = p.monthly*Math.pow(1+p.incr,y-1);
+    const s = (G>0 && y > years-G) ? p.glideShare*(y-(years-G))/G : 0;
+    const tot = eq+sf; eq = tot*(1-s); sf = tot*s;
+    for(let k=0;k<12;k++){ const b = buy(m); eq += b*(1-s); sf += b*s; c += m; eq *= (1+ge); eq -= eq*fm; sf *= (1+gs); }
+    if(crash && crash.y===y && crash.pct>0) eq *= (1-crash.pct);
+  }
+  return taxCalc(eq+sf, c, null, p).net;
+}
+/* MSCI ACWI (EUR, net) metinė grąža, %. Šaltinis: MSCI faktų lapai. */
+const HIST = {2011:-4.25,2012:14.35,2013:17.49,2014:18.61,2015:8.76,2016:11.09,2017:8.89,2018:-4.85,2019:28.93,2020:6.65,2021:27.54,2022:-13.01,2023:18.06,2024:25.33,2025:7.86};
+const HIST_END = 2025;
+function simHist(p, startYear){
+  const fm = p.fee/12; let v = p.initial, c = p.initial; const rows = [];
+  for(let y=startYear;y<=HIST_END;y++){
+    const i = y-startYear, m = p.monthly*Math.pow(1+p.incr,i), g = Math.pow(1+HIST[y]/100,1/12)-1;
+    for(let k=0;k<12;k++){ v += buy(m); c += m; v *= (1+g); v -= v*fm; }
+    rows.push({y, r:HIST[y], c, v});
+  }
+  return rows;
+}
+function netFinal(start,basis,monthly,years,r,p){
+  const rows = sim(start,basis,monthly,p.incr,years,r,p.fee); const l = rows[years];
+  return taxCalc(l.v,l.c,null,p).net;
+}
+function bisect(f, lo, hi, target, it){ for(let i=0;i<(it||60);i++){ const mid=(lo+hi)/2; if(f(mid)<target) lo=mid; else hi=mid; } return (lo+hi)/2; }
+
+function compute(){
+  const p = params();
+  const defl = Math.pow(1+p.infl, p.years);
+  const res = SCEN.map(s => {
+    const rows = sim(p.start,p.basis,p.monthly,p.incr,p.years,p[s.k],p.fee);
+    const T0 = TRADE; TRADE = 0; const rowsNF = sim(p.start,p.basis,p.monthly,p.incr,p.years,p[s.k],0); TRADE = T0;
+    const L = rows[p.years], LN = rowsNF[p.years];
+    const T = taxCalc(L.v, L.c, p.withdraw, p);
+    const netTotal = T.net + T.remain;
+    return {s:s, r:p[s.k], rows:rows, last:L, gross:LN.v, T:T, netTotal:netTotal,
+      feeImpact: LN.v - L.v, eaten: LN.v - netTotal};
+  });
+  return {p:p, defl:defl, res:res};
+}
+
+function render(){
+  const {p, defl, res} = compute();
+  const years = p.years;
+  // Laikotarpio mygtukai
+  document.querySelectorAll('#yearSeg button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.y===years)));
+  $('exempt').disabled = p.mode==="is";
+  $('progressive').disabled = p.mode==="is";
+  $('curValue').disabled = !p.cont; $('curBasis').disabled = !p.cont || p.contribSum>0;
+  if(p.contribSum>0){ $('cont').checked = true; $('cont').disabled = true; if(document.activeElement!==$('curBasis')) $('curBasis').value = String(Math.round(p.contribSum*100)/100).replace('.',','); } else $('cont').disabled = false;
+  if($('contribSum')) $('contribSum').textContent = p.contribSum>0 ? `Įrašyta įmokų: ${p.contribN}, iš viso ${E(p.contribSum)}. Skaičiuojama nuo dabartinės vertės ${E(p.curValue)}.` : '';
+  const partial = res[0].T.w < res[0].last.v - 0.5 || (p.withdraw!==null && p.withdraw>0);
+
+  // 1. Kortelės
+  $('cards').innerHTML = res.map(x => `
+    <article class="card sc-${x.s.k}">
+      <div class="name"><span>${x.s.name}</span><small>${pct.format(x.r*100)} %</small></div>
+      <div class="fig">${E(x.T.net)}</div>
+      <div class="sub">${partial?"išimta":"į rankas"} po GPM po ${years} m.</div>
+      <div class="pair"><span>Šiandienos pinigais</span><b>${E(x.T.net/defl)}</b></div>
+      ${partial?`<div class="pair"><span>Lieka sąskaitoje</span><b>${E(x.T.remain)}</b></div>`:""}
+    </article>`).join("");
+
+  $('dsumTxt').textContent = `${E(p.monthly)}/mėn. · ${years} m. · ${pct.format(p.pes*100)}/${pct.format(p.base*100)}/${pct.format(p.opt*100)} %`;
+  const Bs = res[1];
+  $('summary').innerHTML = `Investuodami ${E(p.monthly)} per mėnesį ${years} m.${p.start>0?` (pradžioje ${E(p.start)})`:''} įmokėsite <b>${E(Bs.last.c)}</b>. Baziniame scenarijuje (${pct.format(Bs.r*100)} %) į rankas po GPM gautumėte <b>${E(Bs.T.net)}</b>, šiandienos pinigais – ${E(Bs.T.net/defl)}. Blogesniu atveju ${E(res[0].T.net)}, geresniu – ${E(res[2].T.net)}.`;
+
+  // 2. Išskaidymas
+  const rowsDef = [
+    ["Įmokėta iš viso", x => x.last.c],
+    ["Portfelio vertė", x => x.last.v],
+    ["Prieaugis", x => x.last.v - x.last.c],
+    ["Fondo, platformos ir pirkimo mokesčiai (sumokėta)", x => x.last.fees],
+    ["GPM", x => x.T.tax],
+    [partial?"Išimta po GPM":"Į rankas po GPM", x => x.T.net]
+  ];
+  $('breakdown').innerHTML = `<thead><tr><th></th>${res.map(x=>`<th><span class="r-lbl sc-${x.s.k}" style="justify-content:flex-end"><i class="dot"></i>${x.s.short}</span></th>`).join("")}</tr></thead><tbody>` +
+    rowsDef.map((d,i)=>`<tr${i===rowsDef.length-1?' class="total"':''}><td>${d[0]}</td>${res.map(x=>`<td>${E(d[1](x))}</td>`).join("")}</tr>`).join("") + `</tbody>`;
+  const b0 = res[1].last.c;
+  $('isNote').textContent = p.mode==="is"
+    ? `Investicinėje sąskaitoje be GPM galite išsiimti iki įmokėtos sumos – ${E(b0)}. Mokestis skaičiuojamas tik nuo to, kas išimama virš jos; 500 € lengvata netaikoma. Pardavimai ir fondų keitimas sąskaitos viduje neapmokestinami.`
+    : `Įprastame režime pelnas apmokestinamas pardavimo metais; ${E(p.exempt)} per metus neapmokestinama.${p.progressive?" Pelnui virš 27 745,80 € taikoma 20 %.":""}`;
+
+  // Laikotarpių palyginimas
+  const P = [20,25,30].map(Y => {
+    const c = sim(p.start,p.basis,p.monthly,p.incr,Y,0,0)[Y].c;
+    const nets = SCEN.map(s => netFinal(p.start,p.basis,p.monthly,Y,p[s.k],p));
+    return {Y, c, nets, real: nets[1]/Math.pow(1+p.infl,Y)};
+  });
+  $('periods').innerHTML = `<div class="scroll"><table><thead><tr><th>Metai</th><th>Įmokėta</th>${SCEN.map(s=>`<th><span class="r-lbl sc-${s.k}" style="justify-content:flex-end"><i class="dot"></i>${s.short}</span></th>`).join("")}<th>Bazinis šiand. €</th></tr></thead><tbody>` +
+    P.map(r => `<tr${r.Y===years?' class="total"':''}><td>${r.Y}</td><td>${E(r.c)}</td>${r.nets.map(n=>`<td>${E(n)}</td>`).join("")}<td>${E(r.real)}</td></tr>`).join("") +
+    `</tbody></table></div><p class="note">Sumos po išlaidų ir GPM, parduodant viską pabaigoje. Nuo 20 iki 30 m. įmokate ${E(P[2].c-P[0].c)} daugiau, o baziniame scenarijuje gaunate ${E(P[2].nets[1]-P[0].nets[1])} daugiau.</p>`;
+
+  // 5. Kiek suvalgo
+  const bb = res[1];
+  const tot = bb.gross || 1;
+  $('eat').innerHTML = `
+    <div><div class="fig">${E(bb.eaten)}</div><div class="sub">bazinis scenarijus, ${pct.format(bb.eaten/tot*100)} % sumos be išlaidų ir mokesčių</div></div>
+    <div>
+      <div class="bar" aria-hidden="true"><i style="width:${bb.netTotal/tot*100}%;background:var(--base)"></i><i style="width:${bb.feeImpact/tot*100}%;background:var(--opt)"></i><i style="width:${bb.T.tax/tot*100}%;background:var(--warn)"></i></div>
+      <div class="pair"><span>Be jokių išlaidų ir mokesčių būtų</span><b>${E(bb.gross)}</b></div>
+      <div class="pair"><span>Fondo ir platformos mokesčiai (su prarastu augimu)</span><b>${E(bb.feeImpact)}</b></div>
+      <div class="pair"><span>GPM</span><b>${E(bb.T.tax)}</b></div>
+      <div class="pair"><span>Lieka jums</span><b>${E(bb.netTotal)}</b></div>
+      <p class="note">Pesimistiniame – ${E(res[0].eaten)}, optimistiniame – ${E(res[2].eaten)}.</p>
+    </div>`;
+
+  // 3. Grafikas
+  window.__crashChart = (state.crashChart && p.crashPct>0) ? sim(p.start,p.basis,p.monthly,p.incr,years,p.base,p.fee,{y:p.crashYear,pct:p.crashPct}) : null;
+  drawChart(res, p);
+
+  // 4. Lentelė
+  document.querySelectorAll('#tblSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.s===state.tableScen)));
+  const sel = res.find(x => x.s.k===state.tableScen) || res[1];
+  $('yearly').innerHTML = `<thead><tr><th>Metai</th><th>Įmokėta</th><th>Vertė</th><th>Prieaugis</th><th>Šiandienos eurais</th></tr></thead><tbody>` +
+    sel.rows.slice(1).map(r => `<tr><td>${r.y}</td><td>${E(r.c)}</td><td>${E(r.v)}</td><td>${E(r.v-r.c)}</td><td>${E(r.v/Math.pow(1+p.infl,r.y))}</td></tr>`).join("") + `</tbody>`;
+
+  // Išskaidytas pardavimas (bazinis)
+  {
+    const B = res[1];
+    const st = staggered(B.last.v, B.last.c, B.r, p);
+    const lumpNow = taxCalc(B.last.v, B.last.c, null, p).tax;
+    if(p.sellYears<=1){
+      $('stagger').innerHTML = `<p>Dabar viskas parduodama vienais metais: GPM ${E(lumpNow)}. Įrašykite, per kiek metų išskaidyti pardavimą (pvz., 5), ir čia matysite metinį planą bei sutaupytą mokestį.</p>`;
+    } else {
+      const save = st.lumpTax - st.taxTotal;
+      $('stagger').innerHTML = `<p>Bazinis scenarijus: ${E(B.last.v)} parduodama per ${p.sellYears} m., pradedant ${years}-aisiais. Likutis tuo metu toliau auga ${pct.format(B.r*100)} % per metus.</p>
+        <div class="scroll"><table><thead><tr><th>Metai</th><th>Parduodama</th><th>GPM</th><th>Į rankas</th><th>Lieka</th></tr></thead><tbody>
+        ${st.rows.map(r=>`<tr><td>${years+r.k}</td><td>${E(r.w)}</td><td>${E(r.tax)}</td><td>${E(r.net)}</td><td>${E(r.left)}</td></tr>`).join("")}
+        <tr class="total"><td>Iš viso</td><td>${E(st.wTotal)}</td><td>${E(st.taxTotal)}</td><td>${E(st.netTotal)}</td><td></td></tr></tbody></table></div>
+        <div class="verdict">${p.mode==="is"
+          ? `Investicinėje sąskaitoje 500 € lengvata netaikoma, todėl išskaidymas GPM nesumažina – tik atideda jo mokėjimą.`
+          : `Tą patį pelną realizavus vienais metais GPM būtų ${E(st.lumpTax)}, išskaidžius – ${E(st.taxTotal)}. Sutaupoma <b>${E(save)}</b>.`}</div>
+        <p class="note">${p.mode==="is" ? "" : (p.progressive ? "Įjungtas 20 % tarifas virš 12 VDU, todėl išskaidymas padeda išlikti po riba ir nauda didesnė. " : "Taikant 5 metų taisyklę (fiksuotas 15 %), kiekvieni papildomi pardavimo metai sutaupo tik apie 75 € (500 € × 15 %). ") + "Pelnas skaičiuojamas pagal vidutinę įsigijimo kainą; pagal FIFO pirmiausia parduodami seniausi, pigiausi vienetai, todėl realus pelnas pirmaisiais metais būtų kiek didesnis."}</p>`;
+    }
+  }
+
+  // Krizės scenarijus (bazinis)
+  let crashRows = null;
+  if(p.crashPct>0){
+    const r = p.base;
+    const netOf = rows => { const l = rows[years]; return taxCalc(l.v,l.c,null,p).net; };
+    const base = netOf(res[1].rows);
+    crashRows = sim(p.start,p.basis,p.monthly,p.incr,years,r,p.fee,{y:p.crashYear,pct:p.crashPct});
+    const withC = netOf(crashRows);
+    const pre = crashRows[p.crashYear].pre;
+    let rec = null; for(let y=p.crashYear+1;y<=years;y++){ if(crashRows[y].v>=pre){ rec = y-p.crashYear; break; } }
+    const mid = Math.max(1, Math.round(years/2));
+    const at = [1, mid, years].filter((v,i,a)=>a.indexOf(v)===i).map(y => {
+      const n = netOf(sim(p.start,p.basis,p.monthly,p.incr,years,r,p.fee,{y:y,pct:p.crashPct}));
+      return {y, n, loss: base-n};
+    });
+    $('crisis').innerHTML = `<p>Jei ${p.crashYear}-ųjų metų pabaigoje portfelis nukristų ${pct.format(p.crashPct*100)} % (nuo ${E(pre)} iki ${E(crashRows[p.crashYear].v)}), bazinio scenarijaus rezultatas po GPM būtų <b>${E(withC)}</b> vietoj ${E(base)} – ${E(base-withC)} mažiau.</p>
+      <p>${p.crashYear===years ? "Kritimas paskutiniais metais – atsigauti nebelieka laiko." : (rec!==null ? `Vertę prieš kritimą portfelis vėl pasiektų po ~${rec} m. (įskaitant naujas įmokas, kurios krizės metu perka pigiau).` : "Iki laikotarpio pabaigos vertė prieš kritimą nebepasiekiama.")}</p>
+      <div class="scroll"><table><thead><tr><th>Kritimas</th><th>Po GPM pabaigoje</th><th>Prarandama</th></tr></thead><tbody>
+      ${at.map(x=>`<tr><td>${x.y}-aisiais metais</td><td>${E(x.n)}</td><td>${E(x.loss)}</td></tr>`).join("")}
+      </tbody></table></div>
+      <p class="note">Tas pats kritimas pabaigoje kainuoja daug daugiau nei pradžioje (sekos rizika, sequence risk): pradžioje portfelis mažas, o vėliau įmokos perka pigiai. Išvada – krizės metu neparduoti, o paskutinius 3–5 metus iki pinigų poreikio dalį perkelti į saugesnį turtą. Po kritimo skaičiuojama ta pati bazinė grąža; realiai rinkos dažnai atsigauna greičiau, bet ne visada.</p>`;
+  } else {
+    $('crisis').innerHTML = `<p class="note">Įveskite kritimo dydį (pvz., 40 %), kad pamatytumėte krizės poveikį.</p>`;
+  }
+  window.__crash = crashRows;
+
+  // Rizikos mažinimas (bazinis)
+  if(p.glideYears>0 && p.glideShare>0){
+    const crash = p.crashPct>0 ? {y:p.crashYear, pct:p.crashPct} : null;
+    const a0 = simGlide(p,p.base,null,false), a1 = simGlide(p,p.base,null,true);
+    let rowsG = `<tr><td>Be krizės</td><td>${E(a0)}</td><td>${E(a1)}</td><td class="${a1>=a0?'up':'down'}">${a1>=a0?'+':'−'}${E(Math.abs(a1-a0))}</td></tr>`;
+    let b0=null,b1=null;
+    if(crash){ b0 = simGlide(p,p.base,crash,false); b1 = simGlide(p,p.base,crash,true);
+      rowsG += `<tr><td>Krizė ${p.crashYear}-aisiais (−${pct.format(p.crashPct*100)} %)</td><td>${E(b0)}</td><td>${E(b1)}</td><td class="${b1>=b0?'up':'down'}">${b1>=b0?'+':'−'}${E(Math.abs(b1-b0))}</td></tr>`; }
+    const inWindow = crash && p.crashYear > years - Math.min(p.glideYears,years);
+    $('glide').innerHTML = `<p>Paskutinius ${Math.min(p.glideYears,years)} m. dalis portfelio tolygiai perkeliama į saugesnį turtą (${pct.format(p.safeRate*100)} % grąža), kol pabaigoje jis sudaro ${pct.format(p.glideShare*100)} %.</p>
+      <div class="scroll"><table><thead><tr><th>Bazinis scenarijus, po GPM</th><th>Be mažinimo</th><th>Su mažinimu</th><th>Skirtumas</th></tr></thead><tbody>${rowsG}</tbody></table></div>
+      <div class="verdict">${crash && inWindow ? `Įprastomis sąlygomis rizikos mažinimas kainuoja ${E(Math.max(0,a0-a1))}, bet krizės ${p.crashYear}-aisiais atveju išsaugo ${E(Math.max(0,b1-b0))}. Tai draudimas: mokate nedaug, kad išvengtumėte didelio nuostolio prieš pat pinigų poreikį.` : crash ? `Krizė (${p.crashYear}-aisiais) įvyksta anksčiau nei prasideda rizikos mažinimas, todėl jis jos nesušvelnina. Pakeiskite krizės metus skirtuke viršuje, kad pamatytumėte skirtumą.` : `Įprastomis sąlygomis rizikos mažinimas kainuoja ${E(Math.max(0,a0-a1))} – tai kaina už mažesnį svyravimą pabaigoje.`}</div>
+      <p class="note">Įprastoje sąskaitoje perkėlimas reiškia ETF pardavimą, o tai – apmokestinamas įvykis; investicinėje sąskaitoje perkėlimai neapmokestinami. Čia šis mokestis neskaičiuojamas.</p>`;
+  } else { $('glide').innerHTML = `<p class="note">Įveskite metų skaičių ir dalį (pvz., 5 m. ir 50 %), kad pamatytumėte poveikį.</p>`; }
+
+  // Istorija
+  {
+    const all = []; for(let y=2011;y<=HIST_END;y++){ const r = simHist(p,y); const l = r[r.length-1]; all.push({y, n:r.length, c:l.c, v:l.v}); }
+    let prod = 1; for(let y=2011;y<=HIST_END;y++) prod *= 1+HIST[y]/100;
+    const cagr = (Math.pow(prod,1/15)-1)*100;
+    $('histAll').innerHTML = `<p>Tos pačios įmokos (${E(p.monthly)}/mėn.${p.initial>0?`, pradžioje ${E(p.initial)}`:''}) su tikromis indekso grąžomis iki ${HIST_END} m. pabaigos, atėmus TER:</p>
+      <div class="tbl-wrap"><table><thead><tr><th>Pradžia</th><th>Metų</th><th>Įmokėta</th><th>Vertė</th><th>Prieaugis</th></tr></thead><tbody>
+      ${all.map(x=>`<tr${String(x.y)===String(state.histStart)?' class="total"':''}><td>${x.y}</td><td>${x.n}</td><td>${E(x.c)}</td><td>${E(x.v)}</td><td class="${x.v>=x.c?'up':'down'}">${x.v>=x.c?'+':'−'}${pct.format(Math.abs(x.v/x.c-1)*100)} %</td></tr>`).join("")}
+      </tbody></table></div>
+      <p class="note">2011–2025 m. MSCI ACWI eurais vidutiniškai uždirbo ${pct.format(cagr)} % per metus – daugiau nei ilgalaikis vidurkis. Nuo 2000 m. pabaigos (įskaitant 2001–2002 ir 2008 m. krizes) vidurkis buvo 6,59 % per metus, todėl baziniam scenarijui realistiška 6–7 % prielaida (dabar nustatyta ${pct.format(p.base*100)} %). Šaltinis: MSCI ACWI Index (EUR) net returns faktų lapai. Praeities grąža negarantuoja ateities.</p>`;
+    const sy = Math.round(clamp(num(state.histStart,2011),2011,HIST_END));
+    const one = simHist(p, sy);
+    $('histOne').innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>Metai</th><th>Grąža</th><th>Įmokėta</th><th>Vertė</th><th>Prieaugis</th></tr></thead><tbody>
+      ${one.map(r=>`<tr><td>${r.y}</td><td class="${r.r>=0?'up':'down'}">${r.r>=0?'+':''}${pct.format(r.r)} %</td><td>${E(r.c)}</td><td>${E(r.v)}</td><td>${E(r.v-r.c)}</td></tr>`).join("")}
+      </tbody></table></div>
+      <p class="note">Atkreipkite dėmesį į 2018 ir 2022 m.: vertė laikinai krito, bet įmokos tęsėsi ir vėliau atsigavo.</p>`;
+  }
+
+  // Progresas
+  renderProgress(p);
+
+  // 8. Vėlesnė pradžia
+  if(years>5){
+    const lateRows = SCEN.map(s => {
+      const full = netFinal(p.initial,p.initial,p.monthly,years,p[s.k],p);
+      const late = netFinal(p.initial,p.initial,p.monthly,years-5,p[s.k],p);
+      const cF = sim(p.initial,p.initial,p.monthly,p.incr,years,p[s.k],p.fee)[years].c;
+      const cL = sim(p.initial,p.initial,p.monthly,p.incr,years-5,p[s.k],p.fee)[years-5].c;
+      return {s, full, late, loss: full-late, cDiff: cF-cL};
+    });
+    const B = lateRows[1];
+    $('late').innerHTML = `<p>Jei pradėtumėte po 5 metų ir investuotumėte ${years-5} m. vietoj ${years}, bazinio scenarijaus rezultatas po GPM būtų <b>${E(B.loss)}</b> mažesnis, nors įmokėtumėte tik ${E(B.cDiff)} mažiau. Skirtumas – prarastas sudėtinių palūkanų laikas.</p>
+      <div class="scroll"><table><thead><tr><th></th><th>Pradėjus dabar</th><th>Po 5 metų</th><th>Prarandama</th></tr></thead><tbody>
+      ${lateRows.map(x=>`<tr><td><span class="r-lbl sc-${x.s.k}"><i class="dot"></i>${x.s.name}</span></td><td>${E(x.full)}</td><td>${E(x.late)}</td><td>${E(x.loss)}</td></tr>`).join("")}
+      </tbody></table></div><p class="note">Sumos po GPM, laikotarpio pabaigoje. Skaičiuojama nuo pradinės sumos ir tų pačių mėnesinių įmokų.</p>`;
+  } else {
+    $('late').innerHTML = `<p class="note">Pasirinkite ilgesnį nei 5 metų laikotarpį.</p>`;
+  }
+
+  // Tikslas
+  const gTarget = p.goal * (p.goalReal ? Math.pow(1+p.infl,p.goalYears) : 1);
+  if(p.goal>0){
+    const gRows = SCEN.map(s => {
+      const f = m => netFinal(p.start,p.basis,m,p.goalYears,p[s.k],p);
+      let m;
+      if(f(0) >= gTarget) m = 0;
+      else { let hi = 100; while(f(hi) < gTarget && hi < 1e7) hi *= 2; m = bisect(f,0,hi,gTarget,60); }
+      return {s, m};
+    });
+    const incrTxt = p.incr ? `, kasmet didinant ${pct.format(p.incr*100)} %` : "";
+    $('goalOut').innerHTML = `<p>Kad per ${p.goalYears} m. po išlaidų ir GPM turėtumėte ${E(p.goal)}${p.goalReal?` šiandienos eurais (≈ ${E(gTarget)} nominaliai)`:""}, pradedant nuo ${E(p.start)}${incrTxt}, kas mėnesį reikėtų:</p>
+      <div class="cards" style="margin-top:8px">${gRows.map(x=>`<div class="card sc-${x.s.k}" style="padding:10px 12px"><div class="name"><span>${x.s.name}</span><small>${pct.format(p[x.s.k]*100)} %</small></div><div class="fig" style="font-size:1.5rem">${x.m===0?"0 €":E(Math.ceil(x.m))}</div><div class="sub">${x.m===0?"tikslas pasiekiamas be naujų įmokų":"per mėnesį"}</div></div>`).join("")}</div>`;
+  } else { $('goalOut').innerHTML = `<p class="note">Įveskite tikslo sumą.</p>`; }
+
+  // Paskola
+  if(p.loanRate>0){
+    const i = p.loanRate/12; let v = p.start;
+    for(let y=1;y<=years;y++){ const m = p.monthly*Math.pow(1+p.incr,y-1); for(let k=0;k<12;k++){ v += m; v *= (1+i); } }
+    const FVL = v;
+    const contrib = res[1].last.c;
+    const fr = r => netFinal(p.start,p.basis,p.monthly,years,r,p);
+    let be = null;
+    if(fr(-0.3) < FVL && fr(0.5) > FVL) be = bisect(fr,-0.3,0.5,FVL,70);
+    $('loanOut').innerHTML = `<p>Ta pati suma (${E(p.start)} pradžioje ir ${E(p.monthly)} kas mėnesį) ${years} m. permokant ${pct.format(p.loanRate*100)} % paskolą sutaupytų palūkanų tiek, kad nauda prilygtų <b>${E(FVL)}</b> (iš jų ${E(FVL-contrib)} – nemokėtos palūkanos). Ši nauda garantuota ir neapmokestinama.</p>
+      <div class="scroll"><table><thead><tr><th></th><th>Investuojant (po GPM)</th><th>Permokant</th><th>Skirtumas</th></tr></thead><tbody>
+      ${res.map(x=>{ const inv = netFinal(p.start,p.basis,p.monthly,years,x.r,p); const d = inv-FVL; return `<tr><td><span class="r-lbl sc-${x.s.k}"><i class="dot"></i>${x.s.name}</span></td><td>${E(inv)}</td><td>${E(FVL)}</td><td style="color:${d>=0?"var(--base)":"var(--warn)"}">${d>=0?"+":"−"}${E(Math.abs(d))}</td></tr>`; }).join("")}
+      </tbody></table></div>
+      <div class="verdict">${be!==null ? `Investuoti apsimoka, jei metinė grąža (prieš TER) viršija <b>≈ ${pct.format(be*100)} %</b>. Žemesnė grąža – naudingiau permokėti.` : `Esant šiems duomenims lūžio taško rasti nepavyko.`}</div>
+      <p class="note">Prielaidos: paskolos likutis per visą laikotarpį ne mažesnis už permokamą sumą, palūkanų norma nesikeičia, permoka be papildomo mokesčio. Permoka sumažina riziką, bet pinigai tampa nelikvidūs.</p>`;
+  } else { $('loanOut').innerHTML = `<p class="note">Įveskite paskolos palūkanų normą.</p>`; }
+
+  window.__last = {p, res};
+}
+
+/* ---------- Grafikas (SVG) ---------- */
+function niceStep(raw){ const e = Math.pow(10, Math.floor(Math.log10(raw))); const f = raw/e; return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*e; }
+function short(v){ if(v>=1e6) return pct.format(Math.round(v/1e5)/10)+" mln."; if(v>=1e3) return Math.round(v/1e3)+" tūkst."; return String(Math.round(v)); }
+function drawChart(res, p){
+  const wrap = $('chart'); const W = Math.max(280, wrap.clientWidth || 600); const H = W < 520 ? 250 : 320;
+  const m = {l:62, r:14, t:12, b:28}; const years = p.years;
+  const d = y => p.chartReal ? Math.pow(1+p.infl, y) : 1;
+  const series = [{name:"Įmokėta", c:"var(--contrib)", dash:true, v: res[1].rows.map(r=>r.c/d(r.y))}]
+    .concat(res.map(x => ({name:x.s.name, c:x.s.c, v:x.rows.map(r=>r.v/d(r.y))})));
+  if(window.__crashChart) series.push({name:"Bazinis su krize", c:"var(--warn)", dash:true, v: window.__crashChart.map(r=>r.v/d(r.y))});
+  let max = 0; series.forEach(s => s.v.forEach(v => { if(v>max) max=v; }));
+  const step = niceStep((max||1)/4); const top = Math.ceil((max||1)/step)*step;
+  const pw = W-m.l-m.r, ph = H-m.t-m.b;
+  const X = y => m.l + pw*y/years, Y = v => m.t + ph*(1 - v/top);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Portfelio vertė ir įmokėta suma pagal metus">`;
+  for(let v=0; v<=top+1e-6; v+=step){ s += `<line x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--line)" stroke-width="1"/><text x="${m.l-8}" y="${Y(v)+4}" text-anchor="end" font-size="11" style="fill:var(--muted)">${short(v)}</text>`; }
+  const xs = years<=12 ? 1 : years<=30 ? 5 : 10;
+  for(let y=0; y<=years; y+=xs){ s += `<text x="${X(y)}" y="${H-8}" text-anchor="middle" font-size="11" style="fill:var(--muted)">${y}</text>`; }
+  series.forEach(se => { const dPath = se.v.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+","+Y(v).toFixed(1)).join(""); s += `<path d="${dPath}" fill="none" style="stroke:${se.c}" stroke-width="${se.dash?2:2.4}" ${se.dash?'stroke-dasharray="5 4"':''} stroke-linejoin="round"/>`; });
+  s += `<g id="hov" style="display:none"><line id="hl" y1="${m.t}" y2="${H-m.b}" style="stroke:var(--muted)" stroke-width="1"/>${series.map((se,i)=>`<circle id="hc${i}" r="4" style="fill:${se.c}"/>`).join("")}</g>`;
+  s += `<rect x="${m.l}" y="${m.t}" width="${pw}" height="${ph}" fill="transparent" id="hitbox"/></svg><div id="tip"></div>`;
+  wrap.innerHTML = s;
+  $('legend').innerHTML = series.map(se => `<span style="--c:${se.c}"><i class="ln${se.dash?' dash':''}"></i>${se.name}</span>`).join("");
+  const svg = wrap.querySelector('svg'), hov = $('hov'), tip = $('tip');
+  function move(ev){
+    const rect = svg.getBoundingClientRect(); const sx = W/rect.width;
+    const px = (ev.clientX - rect.left)*sx;
+    const y = Math.round(clamp((px-m.l)/pw,0,1)*years);
+    hov.style.display = ""; $('hl').setAttribute('x1',X(y)); $('hl').setAttribute('x2',X(y));
+    series.forEach((se,i)=>{ const c=$('hc'+i); c.setAttribute('cx',X(y)); c.setAttribute('cy',Y(se.v[y])); });
+    tip.innerHTML = `<b>${y} metai</b>` + series.map(se=>`<div><span style="color:${se.c}">${se.name}</span><span>${E(se.v[y])}</span></div>`).join("");
+    tip.style.display = "block";
+    const left = X(y)/sx; const tw = tip.offsetWidth;
+    tip.style.left = (left + 12 + tw > rect.width ? left - tw - 12 : left + 12) + "px";
+    tip.style.top = "8px";
+  }
+  const hb = $('hitbox');
+  hb.addEventListener('pointermove', move); hb.addEventListener('pointerdown', move);
+  hb.addEventListener('pointerleave', ()=>{ hov.style.display="none"; tip.style.display="none"; });
+}
+
+/* ---------- Progresas ---------- */
+const PKEY = "investavimo-progresas-v1";
+let progress = {start:"", entries:{}}, pRef = null, pMode = "local";
+try{ const s0 = localStorage.getItem(PKEY); if(s0) progress = JSON.parse(s0); }catch(e){}
+if(!progress.entries) progress.entries = {};
+function ymNow(){ const d = new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
+if(!progress.start) progress.start = ymNow();
+function monthsBetween(a,b){ const [ya,ma]=a.split("-").map(Number), [yb,mb]=b.split("-").map(Number); return (yb-ya)*12+(mb-ma); }
+function planAt(p, k, r){
+  const g = Math.pow(1+r,1/12)-1, fm = p.fee/12; let v = p.start, c = p.basis;
+  for(let i=0;i<k;i++){ const m = p.monthly*Math.pow(1+p.incr,Math.floor(i/12)); v += buy(m); c += m; v *= (1+g); v -= v*fm; }
+  return {v,c};
+}
+async function saveProgress(){
+  try{ localStorage.setItem(PKEY, JSON.stringify(progress)); }catch(e){}
+  if(pRef){ try{ await pRef.set(JSON.parse(JSON.stringify(progress))); }catch(e){ $('pMsg').textContent = "Nepavyko išsaugoti paskyroje – išsaugota tik šioje naršyklėje."; } }
+}
+function renderProgress(p){
+  if($('pStart') && document.activeElement!==$('pStart')) $('pStart').value = progress.start;
+  if($('pMonth') && !$('pMonth').value) $('pMonth').value = ymNow();
+  const keys = Object.keys(progress.entries).sort();
+  $('pStore').textContent = pMode==="db" ? "Įrašai saugomi jūsų paskyroje – matysite juos ir kitame įrenginyje." : "Įrašai saugomi šioje naršyklėje. Retkarčiais atsisiųskite CSV atsarginei kopijai.";
+  if(!keys.length){ $('progressOut').innerHTML = `<p class="note">Kol kas įrašų nėra. Pirmą kartą įrašykite vertę po pirmos įmokos.</p>`; return; }
+  const rows = keys.map(k => {
+    const n = monthsBetween(progress.start,k)+1;
+    if(n<1) return {k, v:progress.entries[k], before:true};
+    const b = planAt(p,n,p.base), lo = planAt(p,n,p.pes), hi = planAt(p,n,p.opt);
+    return {k, v:progress.entries[k], n, c:b.c, plan:b.v, lo:lo.v, hi:hi.v};
+  });
+  const last = rows.filter(r=>!r.before).pop();
+  let head = "";
+  if(last){
+    const d = last.v - last.plan;
+    const where = last.v >= last.hi ? "virš optimistinio scenarijaus" : last.v >= last.plan ? "tarp bazinio ir optimistinio" : last.v >= last.lo ? "tarp pesimistinio ir bazinio" : "žemiau pesimistinio scenarijaus";
+    head = `<p>Paskutinis įrašas (${last.k}, ${last.n}-as mėnuo): <b>${E(last.v)}</b>, pagal bazinį planą turėtų būti ${E(last.plan)} – <b class="${d>=0?'up':'down'}">${d>=0?'+':'−'}${E(Math.abs(d))}</b> (${where}). Įmokėta pagal planą ${E(last.c)}.</p>
+      ${last.v < last.lo ? `<p class="note">Trumpalaikiai svyravimai normalūs – svarbiausia nenutraukti įmokų. Jei atsilikimas didelis, patikrinkite, ar visos įmokos buvo nupirktos.</p>`:""}`;
+  }
+  $('progressOut').innerHTML = head + `<div class="tbl-wrap"><table><thead><tr><th>Mėnuo</th><th>Faktas</th><th>Planas (bazinis)</th><th>Skirtumas</th><th>Planų ribos</th><th></th></tr></thead><tbody>
+    ${rows.slice().reverse().map(r => r.before ? `<tr><td>${r.k}</td><td>${E(r.v)}</td><td colspan="3" class="note">prieš plano pradžią</td><td><button class="del" data-del="${r.k}" aria-label="Ištrinti">×</button></td></tr>` :
+      `<tr><td>${r.k}</td><td>${E(r.v)}</td><td>${E(r.plan)}</td><td class="${r.v>=r.plan?'up':'down'}">${r.v>=r.plan?'+':'−'}${E(Math.abs(r.v-r.plan))}</td><td>${E(r.lo)} – ${E(r.hi)}</td><td><button class="del" data-del="${r.k}" aria-label="Ištrinti">×</button></td></tr>`).join("")}
+    </tbody></table></div>`;
+  $('progressOut').querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => { delete progress.entries[b.dataset.del]; await saveProgress(); render(); }));
+}
+$('pAdd').addEventListener('click', async () => {
+  const k = $('pMonth').value, v = num($('pValue').value, null);
+  if(!k || v===null || v<0){ $('pMsg').textContent = "Įveskite mėnesį ir vertę."; return; }
+  progress.entries[k] = Math.round(v*100)/100; $('pValue').value = ""; $('pMsg').textContent = "Įrašyta.";
+  await saveProgress(); render();
+});
+$('pStart').addEventListener('change', async () => { if($('pStart').value){ progress.start = $('pStart').value; await saveProgress(); render(); } });
+(async () => {
+  try{
+    if(!(window.claude && typeof window.claude.use === "function")) return;
+    const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    const id = user ? await user.id() : null;
+    if(!db || !id) return;
+    pRef = db.doc(`data/users/${id}/tracker`);
+    const snap = await pRef.get();
+    if(snap.exists){ const d = JSON.parse(JSON.stringify(snap.data())); progress = {start: d.start || progress.start, entries: Object.assign({}, progress.entries, d.entries || {})}; }
+    pMode = "db";
+    if(!snap.exists && Object.keys(progress.entries).length) await pRef.set(JSON.parse(JSON.stringify(progress)));
+    try{ localStorage.setItem(PKEY, JSON.stringify(progress)); }catch(e){}
+    render();
+  }catch(e){ pRef = null; pMode = "local"; }
+})();
+
+/* ---------- Išsaugoti planai ---------- */
+const PLKEY = "investavimo-planai-v1";
+function loadPlans(){ try{ return JSON.parse(localStorage.getItem(PLKEY)) || {}; }catch(e){ return {}; } }
+function savePlans(o){ try{ localStorage.setItem(PLKEY, JSON.stringify(o)); }catch(e){} }
+function fillPlans(sel){
+  const o = loadPlans(); const s = $('planSel');
+  s.innerHTML = `<option value="">— pasirinkite planą —</option>` + Object.keys(o).sort().map(n => `<option>${n.replace(/[<&"]/g,"")}</option>`).join("");
+  if(sel) s.value = sel;
+}
+$('planSave').addEventListener('click', () => {
+  const name = ($('planName').value.trim() || `${state.monthly} € × ${state.years} m.`).slice(0,40);
+  const o = loadPlans(); const snap = plainState(state);
+  o[name] = snap; savePlans(o); $('planName').value = ""; fillPlans(name); touch();
+});
+$('planSel').addEventListener('change', (e) => {
+  e.stopPropagation(); const n = $('planSel').value; if(!n) return;
+  const snap = loadPlans()[n]; if(!snap) return;
+  state = Object.assign({}, DEF, snap, {tab: state.tab, tableScen: state.tableScen, synced: state.synced}); touch(); fill(); render();
+});
+$('planDel').addEventListener('click', () => { const n = $('planSel').value; if(!n) return; const o = loadPlans(); delete o[n]; savePlans(o); fillPlans(""); touch(); });
+fillPlans("");
+(function(){ const s = $('histStart'); for(let y=2011;y<=HIST_END;y++){ const o = document.createElement('option'); o.value = String(y); o.textContent = y+" m."; s.appendChild(o); } })();
+
+/* ---------- CSV ---------- */
+function csvText(){
+  const {p, res} = window.__last;
+  const n = v => (Math.round(v*100)/100).toFixed(2).replace(".",",");
+  const head = ["Metai","Įmokėta iš viso"].concat(...res.map(x=>[`Vertė ${x.s.name} (${pct.format(x.r*100)} %)`,`Prieaugis ${x.s.name}`,`Vertė šiandienos eurais ${x.s.name}`]));
+  const lines = [head.join(";")];
+  for(let y=1;y<=p.years;y++){
+    const dd = Math.pow(1+p.infl,y);
+    lines.push([y, n(res[1].rows[y].c)].concat(...res.map(x=>[n(x.rows[y].v), n(x.rows[y].v-x.rows[y].c), n(x.rows[y].v/dd)])).join(";"));
+  }
+  return "\uFEFF" + lines.join("\r\n");
+}
+const dlPromise = (window.claude && typeof window.claude.use === "function") ? window.claude.use("downloads").catch(()=>null) : Promise.resolve(null);
+$('pCsv').addEventListener('click', async () => {
+  const p = params(); const keys = Object.keys(progress.entries).sort();
+  const n2 = v => (Math.round(v*100)/100).toFixed(2).replace(".",",");
+  const lines = ["Mėnuo;Faktinė vertė;Planas (bazinis);Skirtumas"].concat(keys.map(k => { const n = monthsBetween(progress.start,k)+1; const pl = n>0 ? planAt(p,n,p.base).v : 0; return [k, n2(progress.entries[k]), n2(pl), n2(progress.entries[k]-pl)].join(";"); }));
+  const d = await dlPromise;
+  if(d){ try{ await d.save({filename:"investavimo_progresas.csv", data:"\uFEFF"+lines.join("\r\n")}); $('pMsg').textContent = "CSV išsaugotas."; return; }catch(e){ if(e && e.code==="declined"){ return; } } }
+  $('pMsg').textContent = "Atsisiųsti nepavyko.";
+});
+$('csvBtn').addEventListener('click', async () => {
+  const msg = $('csvMsg'); msg.textContent = ""; $('csvFallback').innerHTML = "";
+  const text = csvText(); const d = await dlPromise;
+  if(d){
+    try{ await d.save({filename:`investavimas_${window.__last.p.years}m.csv`, data:text}); msg.textContent = "CSV failas išsaugotas."; return; }
+    catch(e){ if(e && e.code==="declined"){ msg.textContent = "Atsisiuntimas atšauktas."; return; } if(e && e.code==="rate_limited"){ msg.textContent = "Palaukite ir bandykite dar kartą."; return; } }
+  }
+  msg.textContent = "Atsisiųsti čia nepavyko. Nukopijuokite tekstą ir įklijuokite į Excel arba išsaugokite kaip .csv:";
+  const ta = document.createElement('textarea'); ta.readOnly = true; ta.value = text.replace("\uFEFF",""); $('csvFallback').appendChild(ta); ta.focus(); ta.select();
+});
+
+/* ---------- Įvykiai ---------- */
+function onChange(){
+  TEXT.forEach(id => state[id] = $(id).value);
+  CHECK.forEach(id => state[id] = $(id).checked);
+  const r = document.querySelector('input[name=mode]:checked'); state.mode = r ? r.value : "regular";
+  touch(); render();
+}
+$('app').addEventListener('input', onChange);
+$('app').addEventListener('change', onChange);
+function onContrib(e){ const t=e.target; if(!t.dataset||!t.dataset.cf) return; const i=+t.dataset.ci; const cs=(Array.isArray(state.contribs)?state.contribs:[]).map(c=>Object.assign({},c)); if(!cs[i]) return; cs[i][t.dataset.cf]=t.value; state.contribs=cs; }
+$('contribList').addEventListener('input', onContrib);
+$('contribList').addEventListener('change', onContrib);
+$('contribList').addEventListener('click', e=>{ const b=e.target.closest('[data-cdel]'); if(!b) return; const i=+b.dataset.cdel; state.contribs=(Array.isArray(state.contribs)?state.contribs:[]).filter((_,k)=>k!==i); renderContribs(); touch(); render(); });
+$('contribAdd').addEventListener('click', ()=>{ state.contribs=[...(Array.isArray(state.contribs)?state.contribs:[]), {d:todayIso(), a:String(state.monthly||'200')}]; renderContribs(); touch(); render(); });
+function showTab(t){ if(!document.querySelector(`#tabs button[data-tab="${t}"]`)) t = 'main'; state.tab = t; document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab===t))); document.querySelectorAll('.tabpanel').forEach(el => el.hidden = el.dataset.panel!==t); save(); render(); }
+document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+document.querySelectorAll('#yearSeg button').forEach(b => b.addEventListener('click', () => { $('years').value = b.dataset.y; onChange(); }));
+document.querySelectorAll('.chip[data-infl]').forEach(b => b.addEventListener('click', () => { $('infl').value = b.dataset.infl; onChange(); }));
+document.querySelectorAll('#tblSeg button').forEach(b => b.addEventListener('click', () => { state.tableScen = b.dataset.s; save(); render(); }));
+$('reset').addEventListener('click', () => { state = Object.assign({}, DEF, {tab: state.tab, tableScen: state.tableScen, synced: state.synced}); touch(); fill(); render(); });
+const mq = window.matchMedia('(min-width: 980px)');
+function syncBox(){ if(mq.matches) $('dataBox').open = true; }
+$('dataBox').open = mq.matches;
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { syncBox(); render(); }, 150); });
+
+load(); fill(); showTab(state.tab || 'main'); initCloud();
+})();
+</script>
+</body>
+</html>

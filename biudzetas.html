@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="lt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mėnesio biudžetas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F5; --surface:#FFFFFF; --ink:#1E2928; --muted:#5D6B69; --line:#D9E0DE;
+  --accent:#2A5D66; --accent-ink:#FFFFFF; --pos:#2C7A4B; --neg:#B4352A;
+  --t0:#EFF4F6; --t1:#F1F5EE; --t2:#F7F2EA; --t3:#F3F1F7;
+  --b0:#9DB8C4; --b1:#A9C19C; --b2:#D3B98F; --b3:#B5AACB;
+  --field:#FFFFFF; --shadow:0 1px 0 rgba(30,41,40,.06);
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151B1B; --surface:#1D2524; --ink:#E5ECEA; --muted:#9AA9A6; --line:#33403E;
+    --accent:#7FB3BC; --accent-ink:#0F1716; --pos:#6CC48F; --neg:#F08B7F;
+    --t0:#1E2629; --t1:#1F2720; --t2:#29251E; --t3:#24222B;
+    --b0:#5E8798; --b1:#6F8F62; --b2:#9C8459; --b3:#7E7299;
+    --field:#161D1C; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151B1B; --surface:#1D2524; --ink:#E5ECEA; --muted:#9AA9A6; --line:#33403E;
+  --accent:#7FB3BC; --accent-ink:#0F1716; --pos:#6CC48F; --neg:#F08B7F;
+  --t0:#1E2629; --t1:#1F2720; --t2:#29251E; --t3:#24222B;
+  --b0:#5E8798; --b1:#6F8F62; --b2:#9C8459; --b3:#7E7299;
+  --field:#161D1C; --shadow:none;
+}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 130px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.45;font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Header: the running balance is the one loud thing on the page */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.wrap{max-width:920px;margin:0 auto;padding:0 16px}
+.summary{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:12px;padding:14px 0 10px;align-items:end}
+.summary div{min-width:0}
+.summary span{display:block;font-size:13px;color:var(--muted)}
+.summary b{display:block;font-weight:600;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.summary .bal b{font-size:26px;font-weight:700;letter-spacing:-.01em}
+.pos{color:var(--pos)} .neg{color:var(--neg)}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px 9px;cursor:pointer;color:var(--muted);font-weight:500;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+main{padding:18px 0 8px}
+section.tab{display:none} section.tab.on{display:block}
+h2{font-size:19px;margin:22px 0 6px;font-weight:700}
+h2:first-child{margin-top:4px}
+h3{font-size:16px;margin:0;font-weight:600}
+.hint{color:var(--muted);font-size:13.5px;margin:0 0 12px;max-width:68ch}
+
+/* Spreadsheet rows */
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow);overflow:hidden}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 112px 118px 112px 104px 64px;gap:6px;align-items:center;padding:5px 10px}
+.hrow{font-size:12.5px;color:var(--muted);padding-top:8px;padding-bottom:4px}
+.hrow span:nth-child(4){text-align:right}
+.row{border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+input.f,select.f{width:100%;min-width:0;background:var(--field);border:1px solid var(--line);border-radius:4px;padding:7px 8px;font-size:15px}
+input.f.num{text-align:right}
+input.f.nm{border-color:transparent;background:transparent;padding-left:4px}
+input.f.nm:hover,input.f.nm:focus{border-color:var(--line);background:var(--field)}
+select.f{padding:7px 4px;cursor:pointer}
+.mon{text-align:right;font-weight:600}
+.ro{text-align:right;color:var(--muted);padding:7px 8px;font-size:14px}
+.acts{display:flex;gap:2px;justify-content:flex-end}
+.ib{background:none;border:1px solid transparent;border-radius:4px;width:30px;height:30px;cursor:pointer;color:var(--muted);font-size:15px;line-height:1}
+.ib:hover{border-color:var(--line);color:var(--ink)}
+.ib.del:hover{color:var(--neg)}
+.subs{padding:0 0 6px 0}
+.subs .grid{padding-left:28px}
+.subs .grid input.nm{font-size:14px}
+.subs .grid::before{content:"";}
+.add{background:none;border:0;color:var(--accent);font-weight:600;cursor:pointer;padding:8px 10px;font-size:14px}
+.add:hover{text-decoration:underline}
+.add.small{padding:4px 10px 4px 32px;font-weight:500;font-size:13.5px}
+
+/* Expense groups: quiet tints so neighbouring groups read apart */
+.group{margin:0 0 14px;border:1px solid var(--line);border-radius:6px;overflow:hidden;box-shadow:var(--shadow)}
+.group.t0{background:var(--t0)} .group.t1{background:var(--t1)} .group.t2{background:var(--t2)} .group.t3{background:var(--t3)}
+.ghead{display:flex;align-items:center;gap:8px;padding:10px 10px 6px}
+.ghead .no{font-weight:700;color:var(--muted);width:20px;text-align:right;flex:none}
+.ghead input.f.nm{font-weight:700;font-size:16px;flex:1}
+.ghead .gt{font-weight:700;white-space:nowrap}
+.ghead .gp{color:var(--muted);font-size:13px;white-space:nowrap;min-width:58px;text-align:right}
+.group .row{border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.group .hrow{border-top:0}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:8px 13px;cursor:pointer;font-weight:500;font-size:14px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+/* Results */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;box-shadow:var(--shadow);margin-bottom:14px}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid var(--line)}
+.kv:first-child{border-top:0}
+.kv b{white-space:nowrap}
+.big{font-size:28px;font-weight:700;letter-spacing:-.01em}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{padding:7px 8px;text-align:right;border-top:1px solid var(--line);white-space:nowrap}
+th{font-weight:600;color:var(--muted);font-size:12.5px;border-top:0}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+tr.tot td{font-weight:700;border-top:2px solid var(--line)}
+.tscroll{overflow-x:auto}
+.bars{display:grid;gap:10px}
+.bar .lab{display:flex;justify-content:space-between;gap:10px;font-size:14px;margin-bottom:3px}
+.bar .lab span:last-child{color:var(--muted);white-space:nowrap}
+.track{height:14px;background:color-mix(in srgb,var(--line) 55%,transparent);border-radius:3px;position:relative;overflow:visible}
+.fill{height:100%;border-radius:3px}
+.target{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
+.rule{display:grid;gap:14px}
+.rule .lab b{font-weight:600}
+.ok{color:var(--pos)} .warn{color:var(--neg)}
+.inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.inline input.f{width:130px}
+
+/* Months */
+.chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:thin}
+.chips button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:14px}
+.chips button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chips button.has::after{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-left:6px;vertical-align:middle;opacity:.6}
+.year{display:flex;align-items:center;gap:6px;font-weight:700;font-size:17px}
+.mt input.f{width:118px;margin-left:auto;display:block}
+.mt td{vertical-align:middle}
+tr.click{cursor:pointer} tr.click:hover td{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+tr.sel td{background:color-mix(in srgb,var(--accent) 11%,transparent)}
+.virt{color:var(--muted);font-style:italic}
+
+/* Scenarios */
+.scgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.field{display:grid;gap:4px;margin:8px 0}
+.field label{font-size:13px;color:var(--muted)}
+.out{margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
+.step{display:flex;gap:6px}
+.step .btn{padding:6px 10px}
+
+.fine{max-width:920px;margin:0 auto;padding:18px 16px 28px;color:var(--muted);font-size:12px}
+.status{font-size:12px;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:6px;display:none;gap:12px;align-items:center;z-index:20;font-size:14px;max-width:calc(100% - 24px)}
+.toast.on{display:flex}
+.toast button{background:none;border:0;color:inherit;font-weight:700;text-decoration:underline;cursor:pointer}
+
+@media (max-width:640px){
+  .summary{grid-template-columns:1fr 1fr;row-gap:4px}
+  .summary .bal{grid-column:1 / -1;display:flex;justify-content:space-between;align-items:baseline}
+  .summary .bal span{display:inline}
+  .grid{grid-template-columns:1fr 1fr 1fr auto;grid-template-areas:"nm nm nm acts" "amt per mon mon" "typ typ typ typ";row-gap:6px;padding:8px 10px}
+  .grid > .c-nm{grid-area:nm} .grid > .c-amt{grid-area:amt} .grid > .c-per{grid-area:per} .grid > .c-mon{grid-area:mon} .grid > .c-typ{grid-area:typ} .grid > .c-acts{grid-area:acts}
+  .grid.notype{grid-template-areas:"nm nm nm acts" "amt per mon mon"}
+  .hrow{display:none}
+  .subs .grid{padding-left:22px}
+  .ghead{flex-wrap:wrap}
+  .ghead .gp{min-width:0}
+  th,td{padding:7px 5px}
+  .mt input.f{width:82px;padding:6px 5px;font-size:15px}
+  .mt th,.mt td{padding:6px 3px}
+  .ghead input.f.nm{flex:1 1 calc(100% - 70px)}
+  .ghead .gt{margin-left:28px}
+  .ghead .gp{margin-right:auto}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="summary" aria-live="polite">
+      <div><span>Pajamos per mėn.</span><b id="sInc">0,00 €</b></div>
+      <div><span>Išlaidos per mėn.</span><b id="sExp">0,00 €</b></div>
+      <div class="bal"><span>Likutis</span><b id="sBal">0,00 €</b></div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="budget">Biudžetas</button>
+      <button role="tab" data-tab="results">Rezultatai</button>
+      <button role="tab" data-tab="months">Mėnesiai</button>
+      <button role="tab" data-tab="scen">Scenarijai</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="tab" id="tab-budget"></section>
+  <section class="tab" id="tab-results">
+    <h2>Mėnesio suvestinė</h2>
+    <div class="card" id="resSummary"></div>
+    <div class="card">
+      <h3>Kiek galiu skirti paskolos permokoms ar taupymui per mėnesį</h3>
+      <p class="hint" style="margin-top:4px">Apskaičiuota iš likučio. Jei norite palikti dalį pinigų sąskaitoje kaip rezervą, įrašykite jį.</p>
+      <div class="inline"><label for="reserve">Palikti rezervui</label><input class="f num" id="reserve" inputmode="decimal" placeholder="0,00"> <span>€ per mėn.</span></div>
+      <div class="out" id="resFree"></div>
+    </div>
+    <h2>Kategorijos</h2>
+    <div class="card tscroll" id="resCats"></div>
+    <div class="card"><h3 style="margin-bottom:12px">Išlaidos pagal kategorijas, % nuo pajamų</h3><div class="bars" id="resChart"></div></div>
+    <h2>Taupymo norma ir 50/30/20</h2>
+    <p class="hint">Kiekviena išlaidų eilutė Biudžeto skiltyje pažymėta kaip „Būtina“, „Noras“ arba „Taupymas“. Taupymui priskiriamos taupymo eilutės ir teigiamas likutis.</p>
+    <div class="card" id="resRule"></div>
+    <h2>Metų prognozė</h2>
+    <div class="card tscroll" id="resYear"></div>
+  </section>
+  <section class="tab" id="tab-months"></section>
+  <section class="tab" id="tab-scen"></section>
+</main>
+
+<footer class="fine">
+  <div class="status" id="status"></div>
+  <p>Tai apytikslis skaičiavimas. Duomenys saugomi tik jūsų naršyklėje šiame įrenginyje – niekur nesiunčiami. Atsarginei kopijai naudokite „Eksportuoti viską“.</p>
+</footer>
+<div class="toast" id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo" type="button">Atšaukti</button></div>
+
+<script>
+(function(){
+"use strict";
+const PER={m:{l:"Mėnesinė",d:1},q:{l:"Ketvirtinė",d:3},y:{l:"Metinė",d:12}};
+const TYPES={need:"Būtina",want:"Noras",save:"Taupymas"};
+const MONTHS=["Sausis","Vasaris","Kovas","Balandis","Gegužė","Birželis","Liepa","Rugpjūtis","Rugsėjis","Spalis","Lapkritis","Gruodis"];
+const LS="biudzetas-v1";
+const fmt=new Intl.NumberFormat("lt-LT",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:2});
+const eur=v=>fmt.format(Number.isFinite(v)?(Math.abs(v)<0.005?0:v):0);
+const sEur=v=>(v>0.004?"+":"")+eur(v);
+const pct=v=>(Number.isFinite(v)?v:0).toLocaleString("lt-LT",{minimumFractionDigits:1,maximumFractionDigits:1})+" %";
+const numOld=s=>{if(typeof s==="number")return Number.isFinite(s)?s:0;const n=parseFloat(String(s==null?"":s).replace(/[\s\u00a0€]/g,"").replace(",","."));return Number.isFinite(n)?n:0;};
+const num=s=>{if(typeof s==="number")return Number.isFinite(s)?s:0;let t=String(s==null?"":s).replace(/[\s  €]/g,"");if(/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(t))t=t.replace(/\./g,"");else if(/^-?\d{1,3}(,\d{3})+\.\d+$/.test(t))t=t.replace(/,/g,"");t=t.replace(",",".");const n=parseFloat(t);return Number.isFinite(n)?n:0;};
+const inVal=n=>{if(n===null||n===undefined||n==="")return "";n=num(n);return n?n.toFixed(2).replace(".",","):"";};
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const uid=()=>Math.random().toString(36).slice(2,10);
+const cls=v=>v<-0.004?"neg":"pos";
+const $=id=>document.getElementById(id);
+
+function sub(name,amount=0,period="m"){return {id:uid(),name,amount,period};}
+function row(name,amount=0,period="m",type="need",extra={}){return Object.assign({id:uid(),name,amount,period,type,subs:null},extra);}
+function defaults(){
+  const now=new Date();
+  return {
+    v:1,updatedAt:0,tab:"budget",
+    income:[{id:"salary",name:"Alga į rankas (neto)",amount:0,period:"m"},{id:uid(),name:"Kitos pajamos (premijos, nuoma, kt.)",amount:0,period:"m"}],
+    groups:[
+      {id:uid(),name:"Būstas",rows:[
+        row("Būsto paskola (kredito mėn. įmoka)",0,"m","need",{loan:true}),
+        row("Būsto draudimas",0,"y","need"),
+        row("Būsto komunaliniai",0,"m","need",{split:false,subs:[sub("Šildymas"),sub("Elektra"),sub("Vanduo"),sub("Administravimas")]})
+      ]},
+      {id:uid(),name:"Ryšiai, taupymas ir transportas",rows:[
+        row("Telefonas"),row("Internetas"),
+        row("Investavimas",0,"m","save"),row("Pagalvei",0,"m","save"),row("Papildomi paskolai",0,"m","save"),
+        row("Transportas (viešasis bilietas)")
+      ]},
+      {id:uid(),name:"Maistas ir vaistai",rows:[row("Maistas"),row("Vaistai"),row("Vaistai extra")]},
+      {id:uid(),name:"Kita",rows:[row("Drabužiai",0,"m","want"),row("Laisvalaikis",0,"m","want"),row("Prenumeratos",0,"m","want"),row("Dovanos",0,"m","want"),row("Netikėtos išlaidos",0,"m","want")]}
+    ],
+    reserve:0,
+    months:{},year:now.getFullYear(),month:now.getMonth(),
+    scen:{salaryPct:5,loanBalance:"",loanRate:"",loanTerm:"",euriborDelta:1,catGroup:"",catPct:10}
+  };
+}
+function migrate(d){
+  const base=defaults();
+  if(!d||typeof d!=="object")return base;
+  const s=Object.assign({},base,d);
+  s.scen=Object.assign({},base.scen,d.scen||{});
+  s.months=d.months||{};
+  if(!Array.isArray(s.income)||!s.income.length)s.income=base.income;
+  if(!Array.isArray(s.groups))s.groups=base.groups;
+  return stampNames(s);
+}
+function stampNames(s){const ms=s.months||{};Object.keys(ms).forEach(k=>{const r=ms[k];if(!r||typeof r!=="object")return;r.plan=r.plan||{};r.fact=r.fact||{};r.names=r.names||{};(s.groups||[]).forEach(g=>{if(g.id in r.plan||g.id in r.fact)r.names[g.id]=g.name;});});return s;}
+
+let state;
+try{state=migrate(JSON.parse(localStorage.getItem(LS)||"null"));}catch(e){state=defaults();}
+
+/* ---------- paskolos įmoka iš paskolos skaičiuoklės (state.loanSync nukopijuojamas į šios skaičiuoklės duomenis) ---------- */
+function ymNow(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
+function loanAmt(ls){
+  if(!ls||!ls.pays||typeof ls.pays!=="object")return 0;
+  const ks=Object.keys(ls.pays).sort();if(!ks.length)return 0;
+  const k=ymNow();return num(ls.pays[ks.find(x=>x>=k)||ks[ks.length-1]]);
+}
+function loanStamp(ls){return ls?String(ls.copiedAt||ls.asOf||""):"";}
+function isSplit(r){return !!(r.subs&&r.subs.length&&r.split!==false);}
+/* Susietoms (ne ranka įvestoms) paskolos eilutėms įrašo šio mėnesio įmoką. Grąžina true, jei kas nors pasikeitė. */
+function applyLoanSync(){
+  const a=loanAmt(state.loanSync);let ch=false;
+  if(a>0)state.groups.forEach(g=>g.rows.forEach(r=>{
+    if(r.loan&&r.loanAuto!==false&&!isSplit(r)&&(Math.abs(num(r.amount)-a)>0.004||r.period!=="m")){r.amount=a;r.period="m";ch=true;}
+  }));
+  return ch;
+}
+function loanInfo(r){
+  const ls=state.loanSync,a=loanAmt(ls);
+  if(!a)return "";
+  const d=esc(String(ls.asOf||"").slice(0,10)),k=ymNow(),ks=Object.keys(ls.pays).sort();
+  const stale=!ks.some(x=>x>=k)?" Duomenys seni – atidarykite paskolos skaičiuoklę, kad jie atsinaujintų.":"";
+  const io=ls.io&&ls.io.date&&String(ls.io.date).slice(0,7)>=k?` Artimiausia įmoka ${esc(ls.io.date)} – ${eur(num(ls.io.amount))} (tik palūkanos).`:"";
+  const eb=ls.euribor!==undefined?` (EURIBOR ${String(ls.euribor).replace(".",",")} %)`:"";
+  if(r.loanAuto===false||isSplit(r))return `Suma įvesta ranka. Paskolos skaičiuoklėje – ${eur(a)}${eb}, atnaujinta: ${d}.${io}${stale} <button class="add small" style="padding:0 4px" data-act="loanAuto" data-g="${r._g||""}">Naudoti skaičiuoklės sumą</button>`;
+  return `Susieta su paskolos skaičiuokle: ${eur(a)}${eb}. Atnaujinta: ${d}.${io}${stale} Pakeitus sumą ranka, susiejimas išjungiamas.`;
+}
+
+/* ---------- calculations ---------- */
+function monthlyOf(it){
+  if(it.subs&&it.subs.length&&it.split!==false)return it.subs.reduce((a,s)=>a+monthlyOf(s),0);
+  return num(it.amount)/(PER[it.period]||PER.m).d;
+}
+function calc(mod){
+  mod=mod||{};
+  let inc=0;
+  state.income.forEach(r=>{let m=monthlyOf(r);if(r.id==="salary"&&mod.salaryMul)m*=mod.salaryMul;inc+=m;});
+  const by={need:0,want:0,save:0};
+  const groups=state.groups.map(g=>{
+    let t=0;
+    g.rows.forEach(r=>{
+      let m=monthlyOf(r);
+      if(mod.cut&&mod.cut.id===g.id)m*=(1-mod.cut.pct/100);
+      if(r.loan&&mod.loanDelta)m+=mod.loanDelta;
+      t+=m;by[r.type||"need"]+=m;
+    });
+    return {id:g.id,name:g.name,total:t};
+  });
+  const exp=groups.reduce((a,g)=>a+g.total,0);
+  const bal=inc-exp;
+  const saveAll=by.save+Math.max(bal,0);
+  return {inc,exp,bal,groups,by,saveAll,rate:inc>0?saveAll/inc*100:0};
+}
+
+/* ---------- persistence ---------- */
+let dbDoc=null,saveT=null;
+function setStatus(t){$("status").textContent=t;}
+function save(){
+  state.updatedAt=Date.now();stampNames(state);
+  try{localStorage.setItem(LS,JSON.stringify(state));}catch(e){}
+  clearTimeout(saveT);saveT=setTimeout(saveRemote,900);
+}
+async function saveRemote(){
+  if(!dbDoc){setStatus("Duomenys išsaugoti šiame įrenginyje.");return;}
+  try{await dbDoc.set(JSON.parse(JSON.stringify(state)));setStatus("Duomenys išsaugoti jūsų paskyroje.");}
+  catch(e){setStatus("Duomenys išsaugoti šiame įrenginyje.");}
+}
+async function initDb(){
+  if(!window.claude||!window.claude.use){setStatus("Duomenys saugomi šiame įrenginyje.");return;}
+  try{
+    const db=await window.claude.use("db"),user=await window.claude.use("user");
+    if(!db||!user){setStatus("Duomenys saugomi šiame įrenginyje.");return;}
+    const id=await user.id();
+    if(!id){setStatus("Duomenys saugomi šiame įrenginyje.");return;}
+    dbDoc=db.doc("data/users/"+id+"/budget");
+    const snap=await dbDoc.get();
+    if(snap.exists){
+      const d=snap.data();let lsNew=false;
+      if(d&&(d.updatedAt||0)>(state.updatedAt||0)){
+        const tab=state.tab;state=migrate(d);state.tab=tab;
+        try{localStorage.setItem(LS,JSON.stringify(state));}catch(e){}
+        renderAll();
+      }else if(d&&d.loanSync&&loanStamp(d.loanSync)>loanStamp(state.loanSync)){
+        /* Paskolos duomenys į paskyrą įrašomi atskirai, todėl paimami ir tada, kai šio įrenginio biudžetas naujesnis. */
+        state.loanSync=JSON.parse(JSON.stringify(d.loanSync));lsNew=true;
+      }
+      if(applyLoanSync()||lsNew){save();renderAll();}
+      setStatus("Duomenys išsaugoti jūsų paskyroje.");
+    }else if(state.updatedAt){saveRemote();}
+    else setStatus("Duomenys bus išsaugoti jūsų paskyroje.");
+  }catch(e){setStatus("Duomenys saugomi šiame įrenginyje.");}
+}
+const dlP=(window.claude&&window.claude.use)?window.claude.use("downloads").catch(()=>null):Promise.resolve(null);
+
+/* ---------- undo toast ---------- */
+let undoSnap=null,toastT=null;
+function toast(msg,snap){
+  undoSnap=snap||null;
+  $("toastMsg").textContent=msg;
+  $("toastUndo").style.display=snap?"":"none";
+  $("toast").classList.add("on");
+  clearTimeout(toastT);toastT=setTimeout(()=>$("toast").classList.remove("on"),6000);
+}
+$("toastUndo").addEventListener("click",()=>{
+  if(!undoSnap)return;
+  const tab=state.tab;state=migrate(JSON.parse(undoSnap));state.tab=tab;undoSnap=null;
+  $("toast").classList.remove("on");save();renderAll();
+});
+const snap=()=>JSON.stringify(state);
+
+/* ---------- tabs ---------- */
+function showTab(t){
+  state.tab=t;
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===t)));
+  document.querySelectorAll("section.tab").forEach(s=>s.classList.toggle("on",s.id==="tab-"+t));
+  if(t==="months")renderMonths();
+  if(t==="scen")renderScen();
+  if(t==="results")renderResults();
+}
+document.querySelector(".tabs").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-tab]");if(!b)return;
+  showTab(b.dataset.tab);try{localStorage.setItem(LS,JSON.stringify(state));}catch(_){}
+  window.scrollTo({top:0});
+});
+
+/* ---------- budget tab ---------- */
+const perSel=(v,attr)=>`<select class="f" ${attr} aria-label="Periodiškumas">${Object.keys(PER).map(k=>`<option value="${k}"${k===v?" selected":""}>${PER[k].l}</option>`).join("")}</select>`;
+const typeSel=(v,attr)=>`<select class="f" ${attr} aria-label="Tipas">${Object.keys(TYPES).map(k=>`<option value="${k}"${k===v?" selected":""}>${TYPES[k]}</option>`).join("")}</select>`;
+
+function incomeRow(r){
+  return `<div class="grid row" data-inc="${r.id}">
+    <div class="c-nm"><input class="f nm" data-f="name" value="${esc(r.name)}" aria-label="Pavadinimas"></div>
+    <div class="c-amt"><input class="f num" data-f="amount" inputmode="decimal" placeholder="0,00" value="${inVal(r.amount)}" aria-label="Suma, €"></div>
+    <div class="c-per">${perSel(r.period,'data-f="period"')}</div>
+    <div class="c-mon mon" data-mon="i:${r.id}">${eur(monthlyOf(r))}</div>
+    <div class="c-typ"></div>
+    <div class="c-acts acts">${r.id==="salary"?"":`<button class="ib del" data-act="delInc" title="Ištrinti eilutę" aria-label="Ištrinti eilutę">✕</button>`}</div>
+  </div>`;
+}
+function expRow(g,r){
+  const hasSubs=!!(r.subs&&r.subs.length&&r.split!==false);
+  let h=`<div class="grid row" data-g="${g.id}" data-r="${r.id}">
+    <div class="c-nm"><input class="f nm" data-f="name" value="${esc(r.name)}" aria-label="Pavadinimas"></div>
+    <div class="c-amt">${hasSubs?`<div class="ro">pagal dalis</div>`:`<input class="f num" data-f="amount" inputmode="decimal" placeholder="0,00" value="${inVal(r.amount)}" aria-label="Suma, €">`}</div>
+    <div class="c-per">${hasSubs?"":perSel(r.period,'data-f="period"')}</div>
+    <div class="c-mon mon" data-mon="r:${r.id}">${eur(monthlyOf(r))}</div>
+    <div class="c-typ">${typeSel(r.type||"need",'data-f="type"')}</div>
+    <div class="c-acts acts">${hasSubs?"":`<button class="ib" data-act="split" title="Išskaidyti į dalis" aria-label="Išskaidyti į dalis">⋯</button>`}<button class="ib del" data-act="delRow" title="Ištrinti eilutę" aria-label="Ištrinti eilutę">✕</button></div>
+  </div>`;
+  if(r.loan)h+=`<div class="hint" style="margin:0;padding:0 10px 8px;max-width:none" data-g="${g.id}" data-r="${r.id}" data-loaninfo="${r.id}">${loanInfo(Object.assign({},r,{_g:g.id}))}</div>`;
+  if(hasSubs){
+    h+=`<div class="subs">`+r.subs.map(s=>`<div class="grid notype" data-g="${g.id}" data-r="${r.id}" data-s="${s.id}">
+      <div class="c-nm"><input class="f nm" data-f="name" value="${esc(s.name)}" aria-label="Dalies pavadinimas"></div>
+      <div class="c-amt"><input class="f num" data-f="amount" inputmode="decimal" placeholder="0,00" value="${inVal(s.amount)}" aria-label="Suma, €"></div>
+      <div class="c-per">${perSel(s.period,'data-f="period"')}</div>
+      <div class="c-mon mon" data-mon="s:${s.id}" style="font-weight:500">${eur(monthlyOf(s))}</div>
+      <div class="c-typ" style="display:none"></div>
+      <div class="c-acts acts"><button class="ib del" data-act="delSub" title="Ištrinti dalį" aria-label="Ištrinti dalį">✕</button></div>
+    </div>`).join("")+`<button class="add small" data-act="addSub" data-g="${g.id}" data-r="${r.id}">+ Pridėti dalį</button><button class="add small" style="padding-left:10px" data-act="merge" data-g="${g.id}" data-r="${r.id}">Įvesti viena bendra suma</button></div>`;
+  }
+  return h;
+}
+function renderBudget(){
+  const c=calc();
+  let h=`<h2>Pajamos</h2>
+  <p class="hint">Įveskite sumas eurais. Metinės ir ketvirtinės sumos automatiškai perskaičiuojamos į mėnesio.</p>
+  <div class="sheet">
+    <div class="grid hrow"><span>Pavadinimas</span><span>Suma, €</span><span>Periodiškumas</span><span>Per mėn.</span><span></span><span></span></div>
+    ${state.income.map(incomeRow).join("")}
+    <button class="add" data-act="addInc">+ Pridėti pajamų eilutę</button>
+  </div>
+  <h2>Išlaidos</h2>
+  <p class="hint">Pavadinimus galima keisti spustelėjus. „⋯“ išskaido eilutę į dalis, o „Įvesti viena bendra suma“ grąžina vieną lauką. „Tipas“ naudojamas 50/30/20 palyginimui.</p>`;
+  state.groups.forEach((g,i)=>{
+    const gt=c.groups[i];
+    h+=`<div class="group t${i%4}" data-group="${g.id}">
+      <div class="ghead">
+        <span class="no">${i+1}.</span>
+        <input class="f nm" data-gname="${g.id}" value="${esc(g.name)}" aria-label="Kategorijos pavadinimas">
+        <span class="gt" data-gt="${g.id}">${eur(gt.total)}</span>
+        <span class="gp" data-gp="${g.id}">${c.inc>0?pct(gt.total/c.inc*100):"–"}</span>
+        <button class="ib del" data-act="delGroup" data-g="${g.id}" title="Ištrinti kategoriją" aria-label="Ištrinti kategoriją">✕</button>
+      </div>
+      <div class="grid hrow"><span>Eilutė</span><span>Suma, €</span><span>Periodiškumas</span><span>Per mėn.</span><span>Tipas</span><span></span></div>
+      ${g.rows.map(r=>expRow(g,r)).join("")}
+      <button class="add" data-act="addRow" data-g="${g.id}">+ Pridėti eilutę</button>
+    </div>`;
+  });
+  h+=`<div class="btnrow"><button class="btn primary" data-act="addGroup">+ Pridėti kategoriją</button><button class="btn" data-act="export">Eksportuoti viską</button><button class="btn" data-act="import">Importuoti</button><button class="btn" data-act="reset">Atkurti numatytąsias reikšmes</button></div><input type="file" id="impFile" accept=".json,application/json" hidden><p class="hint">„Eksportuoti viską“ atsisiunčia visų duomenų kopiją (biudžetas, mėnesiai, scenarijai). „Importuoti“ juos atkuria iš tokio failo.</p>`;
+  $("tab-budget").innerHTML=h;
+}
+function findCtx(el){
+  const s=el.closest("[data-s]"),r=el.closest("[data-r]"),inc=el.closest("[data-inc]");
+  if(inc)return state.income.find(x=>x.id===inc.dataset.inc);
+  if(r){
+    const g=state.groups.find(x=>x.id===r.dataset.g);if(!g)return null;
+    const row=g.rows.find(x=>x.id===r.dataset.r);if(!row)return null;
+    if(s)return (row.subs||[]).find(x=>x.id===s.dataset.s);
+    return row;
+  }
+  return null;
+}
+function onBudgetInput(e){
+  const t=e.target;
+  if(t.dataset.gname){const g=state.groups.find(x=>x.id===t.dataset.gname);if(g){g.name=t.value;save();}return;}
+  const f=t.dataset.f;if(!f)return;
+  const it=findCtx(t);if(!it)return;
+  if(f==="amount")it.amount=num(t.value);else it[f]=t.value;
+  if(it.loan&&f==="amount"&&loanAmt(state.loanSync)>0){
+    it.loanAuto=Math.abs(num(it.amount)-loanAmt(state.loanSync))<0.005?true:false;
+    const li=document.querySelector(`[data-loaninfo="${it.id}"]`);if(li)li.innerHTML=loanInfo(Object.assign({},it,{_g:li.dataset.g}));
+  }
+  save();updateLive();
+}
+$("tab-budget").addEventListener("input",onBudgetInput);
+$("tab-budget").addEventListener("change",onBudgetInput);
+$("tab-budget").addEventListener("change",e=>{
+  if(e.target.id!=="impFile")return;
+  const file=e.target.files&&e.target.files[0];if(!file)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      let d=JSON.parse(String(rd.result).replace(/^﻿/,""));
+      if(d&&d.app==="menesio-biudzetas"&&d.data)d=d.data;
+      if(!d||!Array.isArray(d.groups)||!Array.isArray(d.income))throw new Error("format");
+      const before=snap(),tab=state.tab;state=migrate(d);state.tab=tab;save();renderAll();toast("Duomenys importuoti",before);
+    }catch(err){toast("Nepavyko importuoti: failas netinkamas.");}
+  };
+  rd.readAsText(file);
+});
+$("tab-budget").addEventListener("focusout",e=>{
+  const t=e.target;if(t.dataset&&t.dataset.f==="amount")t.value=inVal(t.value);
+});
+$("tab-budget").addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]");if(!b)return;
+  const a=b.dataset.act,before=snap();
+  const rEl=b.closest("[data-r]"),gid=b.dataset.g||(rEl&&rEl.dataset.g);
+  const g=state.groups.find(x=>x.id===gid);
+  let focusSel=null;
+  if(a==="addInc"){const n={id:uid(),name:"Nauja pajamų eilutė",amount:0,period:"m"};state.income.push(n);focusSel=`[data-inc="${n.id}"] input[data-f="name"]`;}
+  else if(a==="delInc"){const id=b.closest("[data-inc]").dataset.inc;const it=state.income.find(x=>x.id===id);state.income=state.income.filter(x=>x.id!==id);toast(`Ištrinta: ${it?it.name:"eilutė"}`,before);}
+  else if(a==="addRow"&&g){const n=row("Nauja eilutė",0,"m",g.rows.length&&g.rows.every(r=>r.type==="want")?"want":"need");g.rows.push(n);focusSel=`[data-r="${n.id}"]:not([data-s]) input[data-f="name"]`;}
+  else if(a==="delRow"&&g){const id=rEl.dataset.r;const it=g.rows.find(x=>x.id===id);g.rows=g.rows.filter(x=>x.id!==id);toast(`Ištrinta: ${it?it.name:"eilutė"}`,before);}
+  else if(a==="split"&&g){const it=g.rows.find(x=>x.id===rEl.dataset.r);if(it){if(!(it.subs&&it.subs.length))it.subs=[sub(it.name+" (1 dalis)",num(it.amount),it.period||"m"),sub("2 dalis")];it.split=true;}}
+  else if(a==="merge"&&g){const it=g.rows.find(x=>x.id===b.dataset.r);if(it){const tot=monthlyOf(it);it.split=false;if(tot>0){it.amount=+tot.toFixed(2);it.period="m";}toast("Įvedama viena bendra suma. Dalys išsaugotos – „⋯“ jas grąžins.",before);}}
+  else if(a==="addSub"&&g){const it=g.rows.find(x=>x.id===b.dataset.r);if(it){const n=sub("Nauja dalis");(it.subs=it.subs||[]).push(n);focusSel=`[data-s="${n.id}"] input[data-f="name"]`;}}
+  else if(a==="delSub"&&g){const it=g.rows.find(x=>x.id===rEl.dataset.r);const sid=b.closest("[data-s]").dataset.s;if(it){it.subs=it.subs.filter(x=>x.id!==sid);if(!it.subs.length){it.subs=null;it.split=false;}}toast("Dalis ištrinta",before);}
+  else if(a==="addGroup"){const n={id:uid(),name:"Nauja kategorija",rows:[row("Nauja eilutė")]};state.groups.push(n);focusSel=`[data-gname="${n.id}"]`;}
+  else if(a==="delGroup"&&g){state.groups=state.groups.filter(x=>x.id!==g.id);toast(`Kategorija „${g.name}“ ištrinta`,before);}
+  else if(a==="export"){exportAll();return;}
+  else if(a==="import"){const f=$("impFile");if(f){f.value="";f.click();}return;}
+  else if(a==="loanAuto"&&g){const it=g.rows.find(x=>x.id===rEl.dataset.r);if(it){it.loanAuto=true;if(isSplit(it))it.split=false;applyLoanSync();toast("Paskolos įmoka vėl imama iš paskolos skaičiuoklės",before);}}
+  else if(a==="reset"){const tab=state.tab,months=state.months,ls=state.loanSync;state=defaults();state.tab=tab;state.months=months;if(ls){state.loanSync=ls;applyLoanSync();}toast("Atkurtos numatytosios reikšmės (mėnesių duomenys palikti)",before);}
+  else return;
+  save();renderBudget();updateLive();
+  if(focusSel){const el=document.querySelector(focusSel);if(el){el.focus();el.select();}}
+});
+
+/* ---------- live updates ---------- */
+function updateLive(){
+  const c=calc();
+  $("sInc").textContent=eur(c.inc);$("sExp").textContent=eur(c.exp);
+  const sb=$("sBal");sb.textContent=eur(c.bal);sb.className=cls(c.bal);
+  document.querySelectorAll("[data-mon]").forEach(el=>{
+    const [k,id]=el.dataset.mon.split(":");let it=null;
+    if(k==="i")it=state.income.find(x=>x.id===id);
+    else if(k==="r"){for(const g of state.groups){it=g.rows.find(x=>x.id===id);if(it)break;}}
+    else {for(const g of state.groups){for(const r of g.rows){if(r.subs){it=r.subs.find(x=>x.id===id);if(it)break;}}if(it)break;}}
+    if(it)el.textContent=eur(monthlyOf(it));
+  });
+  c.groups.forEach(g=>{
+    const a=document.querySelector(`[data-gt="${g.id}"]`);if(a)a.textContent=eur(g.total);
+    const p=document.querySelector(`[data-gp="${g.id}"]`);if(p)p.textContent=c.inc>0?pct(g.total/c.inc*100):"–";
+  });
+  if(state.tab==="results")renderResults();
+}
+
+/* ---------- results ---------- */
+const tintVar=i=>`var(--b${i%4})`;
+function renderResults(){
+  const c=calc();
+  $("resSummary").innerHTML=`
+    <div class="kv"><span>Bendros pajamos</span><b>${eur(c.inc)}</b></div>
+    <div class="kv"><span>Bendros išlaidos</span><b>${eur(c.exp)}</b></div>
+    <div class="kv"><span>Likutis</span><b class="big ${cls(c.bal)}">${eur(c.bal)}</b></div>`;
+  const resEl=$("reserve");if(document.activeElement!==resEl)resEl.value=inVal(state.reserve);
+  const free=Math.max(0,c.bal-num(state.reserve));
+  $("resFree").innerHTML=c.bal<0
+    ?`<b class="neg">Šiuo metu išlaidos viršija pajamas ${eur(-c.bal)} per mėn.</b> Permokoms ar taupymui laisvų pinigų nelieka.`
+    :`<div class="kv"><span>Galima skirti per mėnesį</span><b class="big pos">${eur(free)}</b></div><div class="kv"><span>Per metus</span><b>${eur(free*12)}</b></div>`;
+  const tot=c.exp||1;
+  $("resCats").innerHTML=`<table><thead><tr><th>Kategorija</th><th>Per mėn.</th><th>% pajamų</th><th>% išlaidų</th></tr></thead><tbody>
+    ${c.groups.map(g=>`<tr><td>${esc(g.name)}</td><td>${eur(g.total)}</td><td>${c.inc>0?pct(g.total/c.inc*100):"–"}</td><td>${pct(g.total/tot*100)}</td></tr>`).join("")}
+    <tr class="tot"><td>Iš viso</td><td>${eur(c.exp)}</td><td>${c.inc>0?pct(c.exp/c.inc*100):"–"}</td><td>${c.exp?"100,0 %":"–"}</td></tr></tbody></table>`;
+  const max=Math.max(c.inc,c.exp,1);
+  $("resChart").innerHTML=c.groups.map((g,i)=>`<div class="bar"><div class="lab"><span>${esc(g.name)}</span><span>${eur(g.total)} · ${c.inc>0?pct(g.total/c.inc*100):"–"}</span></div><div class="track"><div class="fill" style="width:${Math.min(100,g.total/max*100)}%;background:${tintVar(i)}"></div></div></div>`).join("")+
+    `<div class="bar"><div class="lab"><span><b>Likutis</b></span><span class="${cls(c.bal)}">${eur(c.bal)} · ${c.inc>0?pct(c.bal/c.inc*100):"–"}</span></div><div class="track"><div class="fill" style="width:${Math.min(100,Math.abs(c.bal)/max*100)}%;background:var(--${c.bal<0?"neg":"pos"})"></div></div></div>`;
+  const P=v=>c.inc>0?v/c.inc*100:0;
+  const parts=[
+    {k:"Būtinos išlaidos",v:P(c.by.need),t:50,good:v=>v<=50,note:"tikslas – ne daugiau 50 %"},
+    {k:"Norai",v:P(c.by.want),t:30,good:v=>v<=30,note:"tikslas – ne daugiau 30 %"},
+    {k:"Taupymas (įskaitant likutį)",v:P(c.saveAll),t:20,good:v=>v>=20,note:"tikslas – bent 20 %"}
+  ];
+  $("resRule").innerHTML=`<div class="kv" style="border:0;padding-top:0"><span>Taupymo norma</span><b class="big">${pct(c.rate)}</b></div>
+    <p class="hint">Iš jų taupymo eilutės: ${eur(c.by.save)} (${pct(P(c.by.save))}), teigiamas likutis: ${eur(Math.max(c.bal,0))}.</p>
+    <div class="rule">${parts.map(p=>`<div class="bar"><div class="lab"><span><b>${p.k}</b> · ${pct(p.v)}</span><span class="${c.inc>0?(p.good(p.v)?"ok":"warn"):""}">${p.note}</span></div>
+      <div class="track"><div class="fill" style="width:${Math.min(100,p.v)}%;background:var(--accent);opacity:.75"></div><div class="target" style="left:${p.t}%" title="Tikslas ${p.t} %"></div></div></div>`).join("")}</div>
+    <p class="hint" style="margin-top:12px">Juoda žymė rodo 50/30/20 taisyklės ribą.</p>`;
+  $("resYear").innerHTML=`<table><thead><tr><th>Kategorija</th><th>Per mėn.</th><th>Per metus</th></tr></thead><tbody>
+    ${c.groups.map(g=>`<tr><td>${esc(g.name)}</td><td>${eur(g.total)}</td><td>${eur(g.total*12)}</td></tr>`).join("")}
+    <tr class="tot"><td>Išlaidos iš viso</td><td>${eur(c.exp)}</td><td>${eur(c.exp*12)}</td></tr>
+    <tr><td>Pajamos</td><td>${eur(c.inc)}</td><td>${eur(c.inc*12)}</td></tr>
+    <tr><td>Taupymo eilutės (investavimas, pagalvė, permokos)</td><td>${eur(c.by.save)}</td><td>${eur(c.by.save*12)}</td></tr>
+    <tr><td>Likutis</td><td class="${cls(c.bal)}">${eur(c.bal)}</td><td class="${cls(c.bal)}">${eur(c.bal*12)}</td></tr>
+    <tr class="tot"><td>Iš viso sutaupysiu (taupymo eilutės + teigiamas likutis)</td><td>${eur(c.saveAll)}</td><td>${eur(c.saveAll*12)}</td></tr></tbody></table>${c.bal<0?`<p class="hint" style="margin:8px 2px 2px">Likutis neigiamas (${eur(c.bal)} per mėn.), todėl dalį taupymo eilučių realiai tektų dengti iš santaupų.</p>`:""}`;
+}
+$("reserve").addEventListener("input",e=>{state.reserve=num(e.target.value);save();renderResults();});
+$("reserve").addEventListener("focusout",e=>{e.target.value=inVal(e.target.value);});
+
+/* ---------- months ---------- */
+const mKey=(y,m)=>"y"+y+"m"+String(m+1).padStart(2,"0");
+function virtualPlan(){const c=calc();const p={inc:+c.inc.toFixed(2)};c.groups.forEach(g=>p[g.id]=+g.total.toFixed(2));return p;}
+function isPast(y,m){const n=new Date();return y<n.getFullYear()||(y===n.getFullYear()&&m<n.getMonth());}
+function getMonth(k,y,m){if(state.months[k])return state.months[k];if(y!==undefined&&isPast(y,m))return {plan:{},fact:{},virtual:true,past:true};return {plan:virtualPlan(),fact:{},virtual:true};}
+function ensureMonth(k){if(!state.months[k])state.months[k]={plan:virtualPlan(),fact:{}};const r=state.months[k];r.names=r.names||{};state.groups.forEach(g=>r.names[g.id]=g.name);return r;}
+function monthIds(rec){const ids=state.groups.map(g=>g.id),ex=new Set(ids);[rec.plan,rec.fact].forEach(o=>Object.keys(o||{}).forEach(k=>{if(k!=="inc"&&!ex.has(k)&&has(o[k])&&num(o[k])!==0){ex.add(k);ids.push(k);}}));return ids;}
+function monthName(rec,id){const g=state.groups.find(x=>x.id===id);if(g)return g.name;const nm=rec.names&&rec.names[id];return nm?nm+" (ištrinta)":"Ištrinta kategorija";}
+const has=v=>v!==null&&v!==undefined&&v!=="";
+function monthTotals(rec){
+  const ids=monthIds(rec);
+  const planExp=ids.reduce((a,id)=>a+num(rec.plan[id]),0);
+  const anyFact=ids.some(id=>has(rec.fact[id]));
+  const factExp=ids.reduce((a,id)=>a+(has(rec.fact[id])?num(rec.fact[id]):0),0);
+  return {planInc:num(rec.plan.inc),factInc:has(rec.fact.inc)?num(rec.fact.inc):null,planExp,factExp:anyFact?factExp:null};
+}
+function renderMonths(){
+  const y=state.year,m=state.month,k=mKey(y,m),rec=getMonth(k,y,m);
+  let h=`<div class="inline" style="justify-content:space-between;margin-bottom:8px">
+    <div class="year"><button class="ib" data-mact="prevY" aria-label="Ankstesni metai">‹</button>${y}<button class="ib" data-mact="nextY" aria-label="Kiti metai">›</button></div>
+    <button class="btn" data-mact="csv">Atsisiųsti CSV</button></div>
+  <div class="chips">${MONTHS.map((n,i)=>`<button data-mact="pick" data-m="${i}" class="${i===m?"on":""} ${state.months[mKey(y,i)]?"has":""}">${n}</button>`).join("")}</div>
+  <div class="btnrow"><button class="btn" data-mact="copyPrev">Kopijuoti praėjusio mėnesio planą</button><button class="btn" data-mact="fillPlan">Užpildyti planą iš biudžeto</button></div>
+  ${rec.past?`<p class="hint">Šis mėnuo jau praėjo ir jam nieko neįvesta, todėl jis neįskaičiuojamas į metų sumas. Jei norite jį užpildyti, spauskite „Užpildyti planą iš biudžeto“ arba įveskite faktą.</p>`:rec.virtual?`<p class="hint">Šiam mėnesiui dar nieko neįvesta, todėl planas rodomas pagal dabartinį biudžetą ir keičiasi kartu su juo. Įvedus faktą, mėnesio planas užfiksuojamas ir vėliau nebesikeičia.</p>`:""}
+  <div class="card tscroll" style="padding:6px 8px"><table class="mt"><thead><tr><th>${MONTHS[m]} ${y}</th><th>Planas</th><th>Faktas</th><th>Skirtumas</th></tr></thead><tbody>
+    ${mRow("inc","Pajamos",rec)}
+    ${monthIds(rec).map(id=>mRow(id,monthName(rec,id),rec)).join("")}
+    <tr class="tot"><td>Išlaidos iš viso</td><td id="mPE"></td><td id="mFE"></td><td id="mDE"></td></tr>
+    <tr class="tot"><td>Likutis</td><td id="mPB"></td><td id="mFB"></td><td></td></tr>
+  </tbody></table></div>
+  <p class="hint">Išlaidų skirtumas = planas − faktas (žalia – išleista mažiau nei planuota). Pajamų skirtumas = faktas − planas.</p>
+  <h2>Metų apžvalga</h2>
+  <div class="card tscroll" style="padding:6px 8px" id="mYear"></div>`;
+  $("tab-months").innerHTML=h;
+  const ch=document.querySelector(".chips"),on=ch&&ch.querySelector("button.on");
+  if(ch&&on)ch.scrollLeft=Math.max(0,on.offsetLeft-ch.clientWidth/2+on.offsetWidth/2);
+  updateMonthCalc();
+}
+function mRow(id,name,rec){
+  return `<tr><td>${esc(name)}</td>
+    <td><input class="f num" data-mk="plan" data-key="${id}" inputmode="decimal" value="${inVal(rec.plan[id])}" placeholder="0,00" aria-label="${esc(name)} planas"></td>
+    <td><input class="f num" data-mk="fact" data-key="${id}" inputmode="decimal" value="${has(rec.fact[id])?inVal(rec.fact[id])||"0,00":""}" placeholder="—" aria-label="${esc(name)} faktas"></td>
+    <td data-diff="${id}"></td></tr>`;
+}
+function updateMonthCalc(){
+  const k=mKey(state.year,state.month),rec=getMonth(k,state.year,state.month);
+  document.querySelectorAll("[data-diff]").forEach(td=>{
+    const id=td.dataset.diff;
+    if(!has(rec.fact[id])){td.textContent="—";td.className="";return;}
+    const d=id==="inc"?num(rec.fact[id])-num(rec.plan[id]):num(rec.plan[id])-num(rec.fact[id]);
+    td.textContent=sEur(d);td.className=cls(d);
+  });
+  const t=monthTotals(rec);
+  $("mPE").textContent=eur(t.planExp);
+  $("mFE").textContent=t.factExp===null?"—":eur(t.factExp);
+  const de=$("mDE");if(t.factExp===null){de.textContent="—";de.className="";}else{const d=t.planExp-t.factExp;de.textContent=sEur(d);de.className=cls(d);}
+  const pb=t.planInc-t.planExp;$("mPB").textContent=eur(pb);$("mPB").className=cls(pb);
+  const fb=$("mFB");
+  if(t.factExp===null&&t.factInc===null){fb.textContent="—";fb.className="";}
+  else{const v=(t.factInc===null?t.planInc:t.factInc)-(t.factExp===null?t.planExp:t.factExp);fb.textContent=eur(v);fb.className=cls(v);}
+  // year overview
+  let sP=0,sF=0,sI=0,sB=0,anyF=false;
+  const rows=MONTHS.map((n,i)=>{
+    const key=mKey(state.year,i),r=getMonth(key,state.year,i);
+    if(r.past)return `<tr class="click ${i===state.month?"sel":""}" data-mact="pick" data-m="${i}"><td>${n} <span class="virt">(neįvesta)</span></td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
+    const tt=monthTotals(r);
+    const inc=tt.factInc===null?tt.planInc:tt.factInc,expF=tt.factExp;
+    const bal=inc-(expF===null?tt.planExp:expF);
+    sP+=tt.planExp;sI+=inc;sB+=bal;if(expF!==null){sF+=expF;anyF=true;}
+    const diff=expF===null?null:tt.planExp-expF;
+    return `<tr class="click ${i===state.month?"sel":""}" data-mact="pick" data-m="${i}"><td>${n}${r.virtual?' <span class="virt">(planas)</span>':""}</td>
+      <td class="${tt.factInc===null?"virt":""}">${eur(inc)}</td><td class="${r.virtual?"virt":""}">${eur(tt.planExp)}</td>
+      <td>${expF===null?"—":eur(expF)}</td><td class="${diff===null?"":cls(diff)}">${diff===null?"—":sEur(diff)}</td><td class="${cls(bal)}">${eur(bal)}</td></tr>`;
+  }).join("");
+  $("mYear").innerHTML=`<table><thead><tr><th>Mėnuo</th><th>Pajamos</th><th>Išlaidos (planas)</th><th>Išlaidos (faktas)</th><th>Skirtumas</th><th>Likutis</th></tr></thead><tbody>${rows}
+    <tr class="tot"><td>Metai</td><td>${eur(sI)}</td><td>${eur(sP)}</td><td>${anyF?eur(sF):"—"}</td><td></td><td class="${cls(sB)}">${eur(sB)}</td></tr></tbody></table>
+    <p class="hint" style="margin:8px 2px 2px">Pilka – reikšmė paimta iš plano, nes faktas dar neįvestas. Praėję mėnesiai be įrašų į metų sumas neįskaičiuojami.</p>`;
+}
+$("tab-months").addEventListener("input",e=>{
+  const t=e.target;if(!t.dataset.mk)return;
+  const k=mKey(state.year,state.month),fresh=!state.months[k],rec=ensureMonth(k);
+  if(fresh)document.querySelectorAll('#tab-months [data-mk="plan"]').forEach(i=>{if(i!==t)i.value=inVal(rec.plan[i.dataset.key]);});
+  rec[t.dataset.mk][t.dataset.key]=t.value.trim()===""?(t.dataset.mk==="fact"?null:0):num(t.value);
+  save();updateMonthCalc();
+  const chip=document.querySelector(`.chips button[data-m="${state.month}"]`);if(chip)chip.classList.add("has");
+});
+$("tab-months").addEventListener("focusout",e=>{const t=e.target;if(t.dataset&&t.dataset.mk&&t.value.trim()!=="")t.value=inVal(t.value)||"0,00";});
+$("tab-months").addEventListener("click",async e=>{
+  const b=e.target.closest("[data-mact]");if(!b)return;
+  const a=b.dataset.mact,before=snap();
+  if(a==="pick"){state.month=+b.dataset.m;}
+  else if(a==="prevY")state.year--;
+  else if(a==="nextY")state.year++;
+  else if(a==="copyPrev"){
+    const pm=state.month===0?11:state.month-1,py=state.month===0?state.year-1:state.year;
+    const src=getMonth(mKey(py,pm));
+    state.months[mKey(state.year,state.month)]={plan:JSON.parse(JSON.stringify(src.plan)),fact:{},names:Object.assign({},src.names||{})};
+    toast(`Planas nukopijuotas iš: ${MONTHS[pm]} ${py} (faktas neperkeltas)`,before);
+  }
+  else if(a==="fillPlan"){ensureMonth(mKey(state.year,state.month)).plan=virtualPlan();toast("Planas užpildytas iš biudžeto",before);}
+  else if(a==="csv"){downloadCSV();return;}
+  save();renderMonths();
+});
+function csvNum(v){return v===null||v===undefined?"":num(v).toFixed(2).replace(".",",");}
+function csvTxt(s){s=String(s);return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
+async function exportAll(){
+  const d=new Date(),stamp=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  const data=JSON.stringify({app:"menesio-biudzetas",exportedAt:d.toISOString(),data:state},null,2);
+  const name=`biudzetas-kopija-${stamp}.json`;
+  try{const dl=await dlP;if(dl){await dl.save({filename:name,data});toast("Atsarginė kopija paruošta");return;}}catch(err){if(err&&err.code==="declined")return;}
+  try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));a.download=name;document.body.appendChild(a);a.click();a.remove();}
+  catch(err){toast("Nepavyko paruošti failo šiame lange.");}
+}
+async function downloadCSV(){
+  const y=state.year;
+  const lines=["Metai;Mėnuo;Eilutė;Planas;Faktas;Skirtumas"];
+  MONTHS.forEach((n,i)=>{
+    const r=getMonth(mKey(y,i),y,i);if(r.past)return;const t=monthTotals(r);
+    const push=(name,p,f,inc)=>{const d=f===null||f===undefined||f===""?"":(inc?num(f)-num(p):num(p)-num(f));lines.push([y,n,csvTxt(name),csvNum(p),has(f)?csvNum(f):"",d===""?"":csvNum(d)].join(";"));};
+    push("Pajamos",r.plan.inc,r.fact.inc,true);
+    monthIds(r).forEach(id=>push(monthName(r,id),r.plan[id],r.fact[id],false));
+    push("Išlaidos iš viso",t.planExp,t.factExp,false);
+  });
+  const data="\ufeff"+lines.join("\r\n");
+  const name=`biudzetas-${y}.csv`;
+  try{
+    const dl=await dlP;
+    if(dl){await dl.save({filename:name,data});toast("CSV failas paruoštas");return;}
+  }catch(err){if(err&&err.code==="declined")return;}
+  try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"text/csv;charset=utf-8"}));a.download=name;document.body.appendChild(a);a.click();a.remove();}
+  catch(err){toast("Nepavyko paruošti failo šiame lange.");}
+}
+
+/* ---------- scenarios ---------- */
+function annuity(P,ratePct,n){P=num(P);n=Math.round(num(n));if(P<=0||n<=0)return null;const i=num(ratePct)/100/12;if(i<=0)return P/n;return P*i/(1-Math.pow(1+i,-n));}
+function renderScen(){
+  const s=state.scen;
+  if(!state.groups.find(g=>g.id===s.catGroup))s.catGroup=state.groups.length?state.groups[state.groups.length-1].id:"";
+  $("tab-scen").innerHTML=`<p class="hint">Scenarijai biudžeto nekeičia – jie tik parodo, kas būtų. Pokytis skaičiuojamas likučiui.</p>
+  <div class="scgrid">
+    <div class="card"><h3>Alga pasikeičia</h3>
+      <div class="field"><label for="scSal">Algos pokytis, % (minusas – sumažėjimas)</label>
+      <div class="step"><button class="btn" data-sstep="salaryPct" data-d="-1">−1</button><input class="f num" id="scSal" data-sc="salaryPct" inputmode="decimal" value="${String(s.salaryPct).replace(".",",")}"><button class="btn" data-sstep="salaryPct" data-d="1">+1</button></div></div>
+      <div class="out" id="oSal"></div></div>
+    <div class="card"><h3>Pasikeičia paskolos įmoka (EURIBOR)</h3>
+      <div class="field"><label for="scBal">Likusi paskolos suma, €</label><input class="f num" id="scBal" data-sc="loanBalance" inputmode="decimal" placeholder="${num((state.loanSync||{}).balance)>0?inVal(state.loanSync.balance)+" (iš paskolos skaičiuoklės)":"pvz., 85 000,00"}" value="${inVal(s.loanBalance)}"></div>
+      <div class="field"><label for="scRate">Dabartinė metinė palūkanų norma (EURIBOR + marža), %</label><input class="f num" id="scRate" data-sc="loanRate" inputmode="decimal" placeholder="${num((state.loanSync||{}).rate)>0?String(state.loanSync.rate).replace(".",",")+" (iš paskolos skaičiuoklės)":"pvz., 4,10"}" value="${s.loanRate===""?"":String(s.loanRate).replace(".",",")}"></div>
+      <div class="field"><label for="scTerm">Likęs terminas, mėnesiais</label><input class="f num" id="scTerm" data-sc="loanTerm" inputmode="numeric" placeholder="${num((state.loanSync||{}).monthsLeft)>0?state.loanSync.monthsLeft+" (iš paskolos skaičiuoklės)":"pvz., 240"}" value="${s.loanTerm}"></div>
+      <div class="field"><label for="scEur">EURIBOR pokytis, procentiniais punktais</label>
+      <div class="step"><button class="btn" data-sset="euriborDelta" data-v="-1">−1</button><input class="f num" id="scEur" data-sc="euriborDelta" inputmode="decimal" value="${String(s.euriborDelta).replace(".",",")}"><button class="btn" data-sset="euriborDelta" data-v="1">+1</button></div></div>
+      <div class="out" id="oLoan"></div></div>
+    <div class="card"><h3>Sumažinu kategoriją</h3>
+      <div class="field"><label for="scCat">Kategorija</label><select class="f" id="scCat" data-sc="catGroup">${state.groups.map(g=>`<option value="${g.id}"${g.id===s.catGroup?" selected":""}>${esc(g.name)}</option>`).join("")}</select></div>
+      <div class="field"><label for="scPct">Sumažinimas, %</label>
+      <div class="step"><button class="btn" data-sstep="catPct" data-d="-5">−5</button><input class="f num" id="scPct" data-sc="catPct" inputmode="decimal" value="${String(s.catPct).replace(".",",")}"><button class="btn" data-sstep="catPct" data-d="5">+5</button></div></div>
+      <div class="out" id="oCat"></div></div>
+    <div class="card"><h3>Visi trys kartu</h3><div class="out" id="oAll" style="border:0;margin:0;padding:0"></div></div>
+  </div>`;
+  updateScen();
+}
+/* Tušti scenarijaus laukai užpildomi paskolos skaičiuoklės duomenimis. */
+function scenLoan(){
+  const s=state.scen,ls=state.loanSync||{},pick=(v,f)=>(v===""||v===null||v===undefined||!(num(v)>0))&&num(f)>0?num(f):v;
+  return {bal:pick(s.loanBalance,ls.balance),rate:pick(s.loanRate,ls.rate),term:pick(s.loanTerm,ls.monthsLeft)};
+}
+function loanDelta(){
+  const s=state.scen,L=scenLoan();
+  const cur=annuity(L.bal,L.rate,L.term);
+  if(cur===null)return null;
+  const nr=Math.max(0,num(L.rate)+num(s.euriborDelta));
+  const nw=annuity(L.bal,nr,L.term);
+  return {cur,nw,nr,d:nw-cur};
+}
+function outBlock(base,mod,extra){
+  const d=mod.bal-base.bal;
+  return `${extra||""}<div class="kv"><span>Naujas likutis</span><b class="${cls(mod.bal)}">${eur(mod.bal)}</b></div>
+    <div class="kv"><span>Papildomai per mėnesį</span><b class="${cls(d)}">${sEur(d)}</b></div>
+    <div class="kv"><span>Papildomai per metus</span><b class="${cls(d)}">${sEur(d*12)}</b></div>`;
+}
+function updateScen(){
+  const s=state.scen,base=calc();
+  const salMul=1+num(s.salaryPct)/100;
+  const sal=state.income.find(x=>x.id==="salary");
+  const mSal=calc({salaryMul:salMul});
+  if($("oSal"))$("oSal").innerHTML=sal&&monthlyOf(sal)>0
+    ?outBlock(base,mSal,`<div class="kv"><span>Nauja alga</span><b>${eur(monthlyOf(sal)*salMul)}</b></div>`)
+    :`<p class="hint">Įveskite algą Biudžeto skiltyje.</p>`;
+  const ld=loanDelta();
+  const mLoan=ld?calc({loanDelta:ld.d}):null;
+  if($("oLoan")){
+    if(!ld)$("oLoan").innerHTML=`<p class="hint">Įveskite likusią sumą, palūkanų normą ir terminą – juos rasite banko programėlėje arba paskolos grafike.</p>`;
+    else{
+      const lr=state.groups.flatMap(g=>g.rows).find(r=>r.loan);
+      const diffNote=lr&&Math.abs(monthlyOf(lr)-ld.cur)>1?`<p class="hint">Pagal šiuos duomenis įmoka būtų ${eur(ld.cur)}, o biudžete įrašyta ${eur(monthlyOf(lr))}. Pokytis pridedamas prie biudžeto įmokos.</p>`:"";
+      $("oLoan").innerHTML=`<div class="kv"><span>Įmoka dabar (pagal duomenis)</span><b>${eur(ld.cur)}</b></div>
+        <div class="kv"><span>Įmoka esant ${pct(ld.nr)}</span><b>${eur(ld.nw)}</b></div>
+        <div class="kv"><span>Įmokos pokytis</span><b class="${cls(-ld.d)}">${sEur(ld.d)}</b></div>${diffNote}`+outBlock(base,mLoan,"");
+    }
+  }
+  const cut={id:s.catGroup,pct:Math.min(100,Math.max(0,num(s.catPct)))};
+  const mCut=calc({cut});
+  const cg=base.groups.find(g=>g.id===s.catGroup);
+  if($("oCat"))$("oCat").innerHTML=cg?outBlock(base,mCut,`<div class="kv"><span>Kategorija po sumažinimo</span><b>${eur(cg.total*(1-cut.pct/100))}</b></div>`):`<p class="hint">Pasirinkite kategoriją.</p>`;
+  const all=calc({salaryMul:salMul,loanDelta:ld?ld.d:0,cut});
+  if($("oAll"))$("oAll").innerHTML=`<p class="hint" style="margin-bottom:4px">Algos pokytis ${pct(num(s.salaryPct))}, EURIBOR ${ld?(num(s.euriborDelta)>0?"+":"")+String(num(s.euriborDelta)).replace(".",",")+" p. p.":"neįvertintas"}, kategorija −${pct(cut.pct)}.</p>`+outBlock(base,all,"");
+}
+$("tab-scen").addEventListener("input",e=>{
+  const t=e.target,k=t.dataset.sc;if(!k)return;
+  state.scen[k]=k==="catGroup"?t.value:(t.value.trim()===""?"":num(t.value));
+  save();updateScen();
+});
+$("tab-scen").addEventListener("change",e=>{if(e.target.dataset.sc==="catGroup"){state.scen.catGroup=e.target.value;save();updateScen();}});
+$("tab-scen").addEventListener("click",e=>{
+  const b=e.target.closest("[data-sstep],[data-sset]");if(!b)return;
+  if(b.dataset.sstep){const k=b.dataset.sstep;state.scen[k]=+(num(state.scen[k])+num(b.dataset.d)).toFixed(2);}
+  else state.scen[b.dataset.sset]=num(b.dataset.v);
+  save();renderScen();
+});
+
+/* ---------- boot ---------- */
+function renderAll(){renderBudget();updateLive();showTab(state.tab||"budget");}
+if(applyLoanSync())save();
+renderAll();
+initDb();
+})();
+</script>
+</body>
+</html>
